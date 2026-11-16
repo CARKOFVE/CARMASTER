@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CAR MASTER - Central de Alerta y Respuesta | Coca-Cola FEMSA</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Google Fonts Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            femsa: {
+              red: '#E61C24',
+              darkred: '#B81118',
+              hover: '#D0161E',
+              black: '#121212',
+              dark: '#1A1A1A',
+              slate: '#262626',
+              gray: '#F4F5F7'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #E61C24;
+    }
+    .badge-criticidad-bajo { background-color: #10B981; color: white; }
+    .badge-criticidad-medio { background-color: #F59E0B; color: white; }
+    .badge-criticidad-alto { background-color: #F97316; color: white; }
+    .badge-criticidad-critico { background-color: #EF4444; color: white; }
+  </style>
+</head>
+<body class="h-full font-sans text-slate-800 antialiased selection:bg-femsa-red selection:text-white flex flex-col">
+
+  <!-- ==================== HEADER SYSTEM (Appears when authenticated) ==================== -->
+  <header id="app-header" class="hidden bg-femsa-black text-white shadow-md border-b border-femsa-red/30 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Shield Logo & App Title -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('hub')">
+        <div class="w-10 h-10 rounded-lg bg-femsa-red flex items-center justify-center text-white shadow-lg shadow-femsa-red/30">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          </svg>
+        </div>
+        <div>
+          <span class="text-xl font-extrabold tracking-tight text-white">CAR <span class="text-femsa-red">MASTER</span></span>
+          <span class="block text-[10px] font-medium text-slate-400 tracking-wider uppercase">Coca-Cola FEMSA • Rumbo al 2030</span>
+        </div>
+      </div>
+
+      <!-- Quick Module Nav Buttons -->
+      <nav class="hidden md:flex items-center space-x-2">
+        <button onclick="navigateTo('hub')" class="px-3 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+          <i class="fa-solid fa-house mr-1.5 text-xs"></i> Menú Hub
+        </button>
+        <button onclick="navigateTo('mod1')" class="px-3 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+          <i class="fa-solid fa-clipboard-check mr-1.5 text-xs text-blue-400"></i> Mód 1: Guardias
+        </button>
+        <button onclick="navigateTo('mod2')" class="px-3 py-1.5 rounded-md text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+          <i class="fa-solid fa-triangle-exclamation mr-1.5 text-xs text-femsa-red"></i> Mód 2: Eventos 24/7
+        </button>
+      </nav>
+
+      <!-- User Profile / Logout -->
+      <div class="flex items-center space-x-3">
+        <div class="text-right hidden sm:block">
+          <p class="text-xs font-semibold text-white">Operador CAR</p>
+          <p class="text-[10px] text-slate-400">Central de Alerta 24/7</p>
+        </div>
+        <button onclick="logout()" title="Cerrar Sesión" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-femsa-red transition flex items-center justify-center text-slate-300 hover:text-white border border-slate-700">
+          <i class="fa-solid fa-right-from-bracket text-sm"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
+
+    <!-- -------------------------------------------------------------------------------- -->
+    <!-- SCREEN 0: PANTALLA DE ACCESO (LOGIN)                                             -->
+    <!-- -------------------------------------------------------------------------------- -->
+    <section id="screen-login" class="w-full max-w-md mx-auto my-auto py-6">
+      <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+        <!-- Banner Superior -->
+        <div class="bg-gradient-to-r from-femsa-black via-slate-900 to-femsa-dark p-8 text-center relative overflow-hidden">
+          <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-femsa-red opacity-20 rounded-full blur-xl"></div>
+          
+          <!-- Escudo Corporativo Vectorial -->
+          <div class="relative z-10 flex justify-center mb-4">
+            <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-femsa-red to-femsa-darkred p-0.5 shadow-xl shadow-femsa-red/40 flex items-center justify-center">
+              <div class="w-full h-full bg-femsa-black rounded-[14px] flex flex-col items-center justify-center p-2 text-white">
+                <svg class="w-9 h-9 text-femsa-red mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                </svg>
+                <span class="text-[9px] font-bold tracking-widest text-slate-300">FEMSA</span>
+              </div>
+            </div>
+          </div>
+
+          <h1 class="text-2xl font-extrabold text-white tracking-tight">CAR <span class="text-femsa-red">MASTER</span></h1>
+          <p class="text-xs text-slate-300 mt-1 font-medium">Central de Alerta y Respuesta • Coca-Cola FEMSA</p>
+          <span class="inline-block mt-3 px-3 py-0.5 rounded-full text-[10px] font-semibold bg-femsa-red/20 text-femsa-red border border-femsa-red/40">
+            RUMBO AL 2030
+          </span>
+        </div>
+
+        <!-- Formulario de Acceso -->
+        <div class="p-8 bg-white">
+          <form onsubmit="handleLogin(event)" class="space-y-5">
+            <div>
+              <label for="input-pass" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+                Clave de Acceso Corporativo
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <i class="fa-solid fa-key"></i>
+                </div>
+                <input 
+                  type="password" 
+                  id="input-pass" 
+                  placeholder="Ingrese su contraseña" 
+                  required 
+                  class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-femsa-red focus:border-transparent transition font-mono text-sm"
+                />
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1.5">Consulte con el Administrador de la Central si no posee acceso.</p>
+            </div>
+
+            <!-- Error Feedback -->
+            <div id="login-error" class="hidden p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-xs font-medium flex items-center space-x-2">
+              <i class="fa-solid fa-circle-exclamation text-red-500"></i>
+              <span>Contraseña incorrecta. Intente nuevamente.</span>
+            </div>
+
+            <button 
+              type="submit" 
+              class="w-full py-3.5 px-4 bg-femsa-red hover:bg-femsa-darkred text-white font-bold rounded-xl shadow-lg shadow-femsa-red/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-femsa-red transition-all flex items-center justify-center space-x-2">
+              <span>Ingresar al Sistema</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+          </form>
+
+          <div class="mt-6 border-t border-slate-100 pt-4 text-center">
+            <p class="text-[11px] text-slate-400">Sistema Seguro Integrado • Monitoreo 24 horas</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- -------------------------------------------------------------------------------- -->
+    <!-- SCREEN 1: HUB DE SELECCIÓN (MENÚ PRINCIPAL OBLIGATORIO)                           -->
+    <!-- -------------------------------------------------------------------------------- -->
+    <section id="screen-hub" class="hidden space-y-8 py-4">
+      <div class="text-center max-w-2xl mx-auto">
+        <span class="px-3 py-1 bg-femsa-red/10 text-femsa-red text-xs font-bold rounded-full border border-femsa-red/20 uppercase tracking-widest">
+          Panel de Control Operativo
+        </span>
+        <h2 class="text-3xl font-extrabold text-slate-900 mt-3 tracking-tight">Bienvenido a CAR MASTER</h2>
+        <p class="text-slate-600 text-sm mt-2">Seleccione el módulo operacional que desea gestionar o consultar a continuación:</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        
+        <!-- CARD MÓDULO 1 -->
+        <div onclick="navigateTo('mod1')" class="group bg-white rounded-2xl p-6 shadow-md hover:shadow-2xl border border-slate-200 hover:border-blue-500 transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-bl-full group-hover:scale-110 transition-transform"></div>
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/30 mb-5 group-hover:scale-105 transition-transform">
+              <i class="fa-solid fa-clipboard-check text-2xl"></i>
+            </div>
+            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Módulo 1</span>
+            <h3 class="text-xl font-bold text-slate-900 mt-1 group-hover:text-blue-600 transition">Entrega y Recepción de Guardia</h3>
+            <p class="text-slate-500 text-xs mt-2 leading-relaxed">
+              Registro del turno operativo, asignación de operadores salientes y entrantes, verificación detallada de la infraestructura tecnológica (VideoWall, VMS, GPS, Energía) y dashboard consolidado.
+            </p>
+          </div>
+
+          <div class="mt-8 pt-4 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-500" id="stat-hub-mod1">Cargando registros...</span>
+            <span class="inline-flex items-center text-xs font-bold text-blue-600 group-hover:translate-x-1 transition-transform">
+              Ingresar <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- CARD MÓDULO 2 -->
+        <div onclick="navigateTo('mod2')" class="group bg-white rounded-2xl p-6 shadow-md hover:shadow-2xl border border-slate-200 hover:border-femsa-red transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-femsa-red/10 rounded-bl-full group-hover:scale-110 transition-transform"></div>
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-femsa-red text-white flex items-center justify-center shadow-lg shadow-femsa-red/30 mb-5 group-hover:scale-105 transition-transform">
+              <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+            </div>
+            <span class="text-xs font-bold text-femsa-red uppercase tracking-wider">Módulo 2</span>
+            <h3 class="text-xl font-bold text-slate-900 mt-1 group-hover:text-femsa-red transition">Registro de Eventos 24/7</h3>
+            <p class="text-slate-500 text-xs mt-2 leading-relaxed">
+              Formulario completo de reportes de seguridad en tiempo real. Matriz con 12 categorías corporativas, niveles de criticidad, gestión TYPP/GP, adjunto de evidencias fotográficas y análisis estadístico por categoría.
+            </p>
+          </div>
+
+          <div class="mt-8 pt-4 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-500" id="stat-hub-mod2">Cargando eventos...</span>
+            <span class="inline-flex items-center text-xs font-bold text-femsa-red group-hover:translate-x-1 transition-transform">
+              Ingresar <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i>
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- -------------------------------------------------------------------------------- -->
+    <!-- SCREEN 2: MÓDULO 1 - ENTREGA Y RECEPCIÓN DE GUARDIA                              -->
+    <!-- -------------------------------------------------------------------------------- -->
+    <section id="screen-mod1" class="hidden space-y-6">
+      
+      <!-- Top Navigation Tabs -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-200 pb-4 gap-4">
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="px-2.5 py-0.5 rounded bg-blue-100 text-blue-800 text-xs font-bold">MÓDULO 1</span>
+            <h2 class="text-2xl font-extrabold text-slate-900">Entrega y Recepción de Guardia</h2>
+          </div>
+          <p class="text-slate-500 text-xs mt-1">Control de turnos y estado de la infraestructura tecnológica de la Central.</p>
+        </div>
+
+        <div class="flex bg-slate-200 p-1 rounded-xl w-full sm:w-auto">
+          <button onclick="switchTabMod1('form')" id="tab-mod1-form" class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition bg-white text-slate-900 shadow">
+            <i class="fa-solid fa-pen-to-square mr-1.5"></i> Nuevo Registro
+          </button>
+          <button onclick="switchTabMod1('dash')" id="tab-mod1-dash" class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">
+            <i class="fa-solid fa-chart-line mr-1.5"></i> Dashboard & Historial
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW A: FORMULARIO GUARDIA -->
+      <div id="view-mod1-form" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <form onsubmit="saveGuardia(event)" class="space-y-8">
+          
+          <!-- DATOS GENERALES TURNO -->
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4 flex items-center text-blue-600">
+              <i class="fa-solid fa-clock mr-2"></i> Datos del Turno y Personal
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Turno Operativo *</label>
+                <select id="m1-turno" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500">
+                  <option value="Mañana (06:00 - 14:00)">Mañana (06:00 - 14:00)</option>
+                  <option value="Tarde (14:00 - 22:00)">Tarde (14:00 - 22:00)</option>
+                  <option value="Noche (22:00 - 06:00)">Noche (22:00 - 06:00)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Operador Entrante *</label>
+                <input type="text" id="m1-op-entrante" required placeholder="Nombre completo" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Operador Saliente *</label>
+                <input type="text" id="m1-op-saliente" required placeholder="Nombre completo" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Supervisor de Turno *</label>
+                <input type="text" id="m1-supervisor" required placeholder="Supervisor a cargo" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500">
+              </div>
+            </div>
+          </div>
+
+          <!-- CHECKLIST DE INFRAESTRUCTURA -->
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4 flex items-center text-blue-600">
+              <i class="fa-solid fa-list-check mr-2"></i> Checklist Estado de Infraestructura CAR
+            </h3>
+
+            <div class="space-y-4" id="m1-checklist-container">
+              <!-- Checklist Items render dynamically via JS -->
+            </div>
+          </div>
+
+          <!-- OBSERVACIONES GENERALES -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Observaciones / Pendientes de Guardia</label>
+            <textarea id="m1-observaciones" rows="3" placeholder="Escriba comentarios generales o tareas pendientes para la guardia entrante..." class="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500"></textarea>
+          </div>
+
+          <!-- BUTTON SUBMIT -->
+          <div class="flex justify-end pt-4 border-t border-slate-100">
+            <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-500/30 transition flex items-center">
+              <i class="fa-solid fa-floppy-disk mr-2"></i> Finalizar y Registrar Entrega de Guardia
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- VIEW B: DASHBOARD GUARDIA -->
+      <div id="view-mod1-dash" class="hidden space-y-6">
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Guardias</span>
+            <p class="text-2xl font-black text-slate-900 mt-1" id="kpi-m1-total">0</p>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Guardias 100% Impecables</span>
+            <p class="text-2xl font-black text-emerald-600 mt-1" id="kpi-m1-ok">0</p>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Guardias con Novedades</span>
+            <p class="text-2xl font-black text-amber-500 mt-1" id="kpi-m1-novedad">0</p>
+          </div>
+        </div>
+
+        <!-- Guardias Table -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex items-center justify-between">
+            <span>Historial de Entregas de Guardia</span>
+            <span class="text-xs font-normal text-slate-500">Registros almacenados localmente</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-slate-500">
+                  <th class="p-3 font-semibold">Fecha/Hora</th>
+                  <th class="p-3 font-semibold">Turno</th>
+                  <th class="p-3 font-semibold">Op. Entrante</th>
+                  <th class="p-3 font-semibold">Op. Saliente</th>
+                  <th class="p-3 font-semibold">Estado Infraestructura</th>
+                  <th class="p-3 font-semibold">Observaciones</th>
+                </tr>
+              </thead>
+              <tbody id="table-mod1-body" class="divide-y divide-slate-100">
+                <!-- Dynamic Content -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- -------------------------------------------------------------------------------- -->
+    <!-- SCREEN 3: MÓDULO 2 - REGISTRO DE EVENTOS 24/7                                    -->
+    <!-- -------------------------------------------------------------------------------- -->
+    <section id="screen-mod2" class="hidden space-y-6">
+      
+      <!-- Header Tabs -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-200 pb-4 gap-4">
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="px-2.5 py-0.5 rounded bg-femsa-red/10 text-femsa-red text-xs font-bold border border-femsa-red/20">MÓDULO 2</span>
+            <h2 class="text-2xl font-extrabold text-slate-900">Registro de Eventos 24/7</h2>
+          </div>
+          <p class="text-slate-500 text-xs mt-1">Formulario de incidentes operativos con clasificación matricial y evidencias.</p>
+        </div>
+
+        <div class="flex bg-slate-200 p-1 rounded-xl w-full sm:w-auto">
+          <button onclick="switchTabMod2('form')" id="tab-mod2-form" class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition bg-white text-slate-900 shadow">
+            <i class="fa-solid fa-plus-circle mr-1.5 text-femsa-red"></i> Registrar Evento
+          </button>
+          <button onclick="switchTabMod2('dash')" id="tab-mod2-dash" class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">
+            <i class="fa-solid fa-chart-pie mr-1.5"></i> Dashboard Analítico & Categorías
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW A: FORMULARIO REGISTRO EVENTOS -->
+      <div id="view-mod2-form" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <form onsubmit="saveEvento(event)" class="space-y-8">
+          
+          <!-- SECCIÓN 1: DATOS BÁSICOS -->
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4 flex items-center text-femsa-red">
+              <i class="fa-solid fa-user-shield mr-2"></i> 1. Información General del Reporte
+            </h3>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              
+              <!-- Persona que reporta -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Persona que Reporta *</label>
+                <select id="m2-persona" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-femsa-red">
+                  <option value="">Seleccione personal...</option>
+                  <option value="Encargado CAR - Juan Pérez">Encargado CAR - Juan Pérez</option>
+                  <option value="Encargado CAR - María Rodríguez">Encargado CAR - María Rodríguez</option>
+                  <option value="Líder de Seguridad - Carlos Mendoza">Líder de Seguridad - Carlos Mendoza</option>
+                  <option value="OMT Ruta 1 - Roberto Gómez">OMT Ruta 1 - Roberto Gómez</option>
+                  <option value="OMT Ruta 2 - Ana Martínez">OMT Ruta 2 - Ana Martínez</option>
+                  <option value="Supervisor Nacional - Fernando Silva">Supervisor Nacional - Fernando Silva</option>
+                  <option value="Analista CCTV - Luis Morales">Analista CCTV - Luis Morales</option>
+                </select>
+              </div>
+
+              <!-- Tipo de Unidad -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Unidad *</label>
+                <select id="m2-tipo-unidad" onchange="toggleUnidadInput()" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-femsa-red">
+                  <option value="Operativa">Unidad Operativa (Planta / CEDIS)</option>
+                  <option value="No Operativa">Unidad No Operativa (Ruta / Administrativo / Externa)</option>
+                </select>
+              </div>
+
+              <!-- Nombre Unidad Operativa / No Operativa -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1" id="m2-lbl-unidad">Nombre de la Unidad / Ubicación *</label>
+                <input type="text" id="m2-nombre-unidad" required placeholder="Ej. CEDIS Toluca / Ruta 57 Km 45" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-femsa-red">
+              </div>
+
+              <!-- Fecha y Hora -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Fecha y Hora del Evento *</label>
+                <input type="datetime-local" id="m2-fecha-hora" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-femsa-red">
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SECCIÓN 2: CRITICIDAD -->
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4 flex items-center text-femsa-red">
+              <i class="fa-solid fa-gauge-high mr-2"></i> 2. Nivel de Criticidad del Evento
+            </h3>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <label class="relative flex flex-col items-center p-3 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-emerald-500 transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50">
+                <input type="radio" name="m2-criticidad" value="Bajo" checked class="sr-only">
+                <span class="w-3 h-3 rounded-full bg-emerald-500 mb-1"></span>
+                <span class="text-xs font-extrabold text-slate-800">BAJO</span>
+                <span class="text-[10px] text-slate-500 text-center mt-0.5">Sin impacto operativo</span>
+              </label>
+
+              <label class="relative flex flex-col items-center p-3 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-amber-500 transition has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50">
+                <input type="radio" name="m2-criticidad" value="Medio" class="sr-only">
+                <span class="w-3 h-3 rounded-full bg-amber-500 mb-1"></span>
+                <span class="text-xs font-extrabold text-slate-800">MEDIO</span>
+                <span class="text-[10px] text-slate-500 text-center mt-0.5">Impacto leve / controlado</span>
+              </label>
+
+              <label class="relative flex flex-col items-center p-3 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-orange-500 transition has-[:checked]:border-orange-500 has-[:checked]:bg-orange-50">
+                <input type="radio" name="m2-criticidad" value="Alto" class="sr-only">
+                <span class="w-3 h-3 rounded-full bg-orange-500 mb-1"></span>
+                <span class="text-xs font-extrabold text-slate-800">ALTO</span>
+                <span class="text-[10px] text-slate-500 text-center mt-0.5">Requiere acción inmediata</span>
+              </label>
+
+              <label class="relative flex flex-col items-center p-3 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-red-600 transition has-[:checked]:border-red-600 has-[:checked]:bg-red-50">
+                <input type="radio" name="m2-criticidad" value="Crítico" class="sr-only">
+                <span class="w-3 h-3 rounded-full bg-red-600 mb-1"></span>
+                <span class="text-xs font-extrabold text-slate-800">CRÍTICO</span>
+                <span class="text-[10px] text-slate-500 text-center mt-0.5">Emergencia / Crisis</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 3: CATEGORÍAS EN CASCADA MATRIZ FEMSA -->
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4 flex items-center text-femsa-red">
+              <i class="fa-solid fa-sitemap mr-2"></i> 3. Categorización de la Matriz (12 Categorías)
+            </h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Categoría Principal -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Categoría Principal *</label>
+                <select id="m2-categoria" onchange="updateSubcategorias()" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-femsa-red">
+                  <option value="">-- Seleccione Categoría --</option>
+                  <option value="Gestión PROINT">1. Gestión PROINT</option>
+                  <option value="Delincuencia Organizada">2. Delincuencia Organizada</option>
+                  <option value="Seguridad en Ruta y Flota">3. Seguridad en Ruta y Flota</option>
+                  <option value="Conflictividad Social">4. Conflictividad Social</option>
+                  <option value="Seguridad Física y Patrimonial">5. Seguridad Física y Patrimonial</option>
+                  <option value="Riesgos de Salud y Bioseguridad">6. Riesgos de Salud y Bioseguridad</option>
+                  <option value="Servicios Públicos">7. Servicios Públicos</option>
+                  <option value="Ética y Cumplimiento">8. Ética y Cumplimiento</option>
+                  <option value="Legal e Institucional">9. Legal e Institucional</option>
+                  <option value="Eventos Naturales">10. Eventos Naturales</option>
+                  <option value="Emergencias Industriales">11. Emergencias Industriales</option>
+                  <option value="TYPP Tecnología y Proyecto">12. TYPP Tecnología y Proyecto</option>
+                </select>
+              </div>
+
+              <!-- Subcategoría Dinámica -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Subcategoría Específica *</label>
+                <select id="m2-subcategoria" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-femsa-red">
+                  <option value="">-- Seleccione Categoría Primero --</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 4: SECCIONES ESPECIALES CONDICIONALES (TYPP Y GESTIÓN GP) -->
+          <div id="m2-sec-especiales" class="space-y-4">
+            
+            <!-- CAMPOS ESPECIALES TYPP (TECNOLOGÍA) -->
+            <div id="m2-box-typp" class="hidden p-4 rounded-xl bg-slate-900 text-white border border-slate-700 space-y-3">
+              <div class="flex items-center text-xs font-bold text-femsa-red uppercase tracking-wider">
+                <i class="fa-solid fa-microchip mr-2"></i> Gestión Específica TYPP (Conteo de Cámaras Afectadas)
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div>
+                  <label class="block text-[11px] text-slate-300 mb-1">Cámaras Axis</label>
+                  <input type="number" min="0" value="0" id="typp-axis" class="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white text-xs">
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-300 mb-1">Cámaras Hikvision</label>
+                  <input type="number" min="0" value="0" id="typp-hikvision" class="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white text-xs">
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-300 mb-1">Cámaras Dahua</label>
+                  <input type="number" min="0" value="0" id="typp-dahua" class="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white text-xs">
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-300 mb-1">Otras Marcas</label>
+                  <input type="number" min="0" value="0" id="typp-otras" class="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white text-xs">
+                </div>
+              </div>
+            </div>
+
+            <!-- CAMPOS ESPECIALES GESTIÓN GP / RECUPERACIÓN -->
+            <div id="m2-box-gp" class="hidden p-4 rounded-xl bg-amber-50 border border-amber-200 space-y-3">
+              <div class="flex items-center text-xs font-bold text-amber-800 uppercase tracking-wider">
+                <i class="fa-solid fa-hand-holding-dollar mr-2"></i> Sección Gestión GP (Recuperación Patrimonial)
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label class="block text-[11px] text-amber-900 font-semibold mb-1">Bienes / Mercadería Recuperada</label>
+                  <input type="text" id="gp-bienes" placeholder="Ej. 120 Cajas de producto / Camión repartidor" class="w-full p-2 bg-white border border-amber-300 rounded text-slate-800 text-xs">
+                </div>
+                <div>
+                  <label class="block text-[11px] text-amber-900 font-semibold mb-1">Monto Estimado Recuperado ($ USD / MXN)</label>
+                  <input type="number" id="gp-monto" placeholder="0.00" class="w-full p-2 bg-white border border-amber-300 rounded text-slate-800 text-xs">
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- SECCIÓN 5: DESCRIPCIÓN Y EVIDENCIAS -->
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2 mb-4 flex items-center text-femsa-red">
+              <i class="fa-solid fa-paperclip mr-2"></i> 4. Detalle y Adjuntar Evidencias Fotográficas
+            </h3>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Descripción Completa de los Hechos *</label>
+                <textarea id="m2-descripcion" required rows="3" placeholder="Detalle la secuencia de los acontecimientos, personal involucrado y acciones inmediatas tomadas..." class="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-femsa-red"></textarea>
+              </div>
+
+              <!-- Adjuntar Archivos / Evidencia -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Adjuntar Archivo / Evidencia Fotográfica</label>
+                <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center bg-slate-50 hover:bg-slate-100 transition relative">
+                  <input type="file" id="m2-archivo" accept="image/*,.pdf" onchange="previewEvidencia(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                  <div class="flex flex-col items-center justify-center space-y-1">
+                    <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-400"></i>
+                    <p class="text-xs font-semibold text-slate-700">Haga clic o arrastre una imagen de evidencia</p>
+                    <p class="text-[10px] text-slate-400">Formatos aceptados: JPG, PNG, PDF (Máx 5MB)</p>
+                  </div>
+                </div>
+
+                <!-- Preview Area -->
+                <div id="m2-preview-container" class="hidden mt-3 p-3 bg-slate-100 rounded-lg flex items-center justify-between border border-slate-200">
+                  <div class="flex items-center space-x-3 overflow-hidden">
+                    <img id="m2-preview-img" src="" alt="Evidencia" class="w-12 h-12 object-cover rounded border border-slate-300">
+                    <div class="truncate">
+                      <p id="m2-file-name" class="text-xs font-bold text-slate-800 truncate">archivo.jpg</p>
+                      <p class="text-[10px] text-emerald-600 font-semibold"><i class="fa-solid fa-circle-check"></i> Archivo cargado correctamente</p>
+                    </div>
+                  </div>
+                  <button type="button" onclick="clearEvidencia()" class="text-slate-400 hover:text-red-500 p-1">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBMIT BUTTON -->
+          <div class="flex justify-end pt-4 border-t border-slate-100">
+            <button type="submit" class="px-6 py-3.5 bg-femsa-red hover:bg-femsa-darkred text-white font-bold text-xs rounded-xl shadow-lg shadow-femsa-red/30 transition flex items-center">
+              <i class="fa-solid fa-shield-cat mr-2"></i> Guardar y Notificar Registro de Evento 24/7
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- VIEW B: DASHBOARD ANALÍTICO & CATEGORÍAS -->
+      <div id="view-mod2-dash" class="hidden space-y-6">
+        
+        <!-- KPI Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Total Eventos 24/7</span>
+            <p class="text-2xl font-black text-slate-900 mt-1" id="kpi-m2-total">0</p>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Eventos Críticos</span>
+            <p class="text-2xl font-black text-red-600 mt-1" id="kpi-m2-criticos">0</p>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Con Evidencia Adjunta</span>
+            <p class="text-2xl font-black text-blue-600 mt-1" id="kpi-m2-evidencias">0</p>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Categorías Afectadas</span>
+            <p class="text-2xl font-black text-emerald-600 mt-1" id="kpi-m2-cats-count">0</p>
+          </div>
+        </div>
+
+        <!-- CHARTS SECTION -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- BAR CHART: CANTIDAD POR CATEGORÍA PRINCIPAL (SOLICITADO EXPLICITAMENTE) -->
+          <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">Desglose de Eventos por Categoría Principal</h3>
+                <p class="text-[11px] text-slate-400">Conteo exacto de incidencias por cada una de las 12 categorías corporativas</p>
+              </div>
+              <span class="px-2.5 py-1 rounded bg-slate-100 text-slate-600 text-[10px] font-bold">Matriz FEMSA</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="chart-categorias"></canvas>
+            </div>
+          </div>
+
+          <!-- DOUGHNUT CHART: CRITICIDAD -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Distribución por Criticidad</h3>
+              <p class="text-[11px] text-slate-400">Proporción de severidad operacional</p>
+            </div>
+            <div class="h-56 relative my-auto">
+              <canvas id="chart-criticidad"></canvas>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- LISTADO ANALÍTICO POR CADA CATEGORÍA -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-900 mb-3">Conteo Detallado de las 12 Categorías Principales</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="container-category-cards">
+            <!-- Cards generated dynamically via JS -->
+          </div>
+        </div>
+
+        <!-- TABLA DE HISTORIAL DE EVENTOS 24/7 -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex items-center justify-between">
+            <span>Historial Completo de Eventos Registrados</span>
+            <input type="text" id="m2-search-input" onkeyup="filterEventosTable()" placeholder="Buscar por unidad, reporte o categoría..." class="px-3 py-1 bg-slate-100 border border-slate-200 rounded-lg text-xs w-64 focus:outline-none focus:ring-1 focus:ring-femsa-red">
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-slate-500">
+                  <th class="p-3 font-semibold">Fecha/Hora</th>
+                  <th class="p-3 font-semibold">Criticidad</th>
+                  <th class="p-3 font-semibold">Reportado Por</th>
+                  <th class="p-3 font-semibold">Unidad / Ubicación</th>
+                  <th class="p-3 font-semibold">Categoría / Subcategoría</th>
+                  <th class="p-3 font-semibold">Evidencia</th>
+                  <th class="p-3 font-semibold text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="table-mod2-body" class="divide-y divide-slate-100">
+                <!-- Dynamic Content -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ==================== MODAL DETALLE DE EVENTO ==================== -->
+  <div id="modal-evento" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200">
+      <div class="bg-slate-900 text-white p-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-shield-halo text-femsa-red"></i>
+          <span class="text-xs font-bold uppercase tracking-wider">Detalle del Registro 24/7</span>
+        </div>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4 text-xs" id="modal-content">
+        <!-- Content inserted dynamically -->
+      </div>
+
+      <div class="bg-slate-50 p-3 border-t border-slate-100 text-right">
+        <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-900">
+          Cerrar Vista
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST NOTIFICATION ==================== -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden max-w-xs bg-slate-900 text-white p-4 rounded-xl shadow-2xl border border-slate-700 flex items-center space-x-3">
+    <i class="fa-solid fa-circle-check text-emerald-400 text-lg" id="toast-icon"></i>
+    <span id="toast-msg" class="text-xs font-medium">Operación realizada con éxito</span>
+  </div>
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+    // --- DICTIONARIES & CONSTANTS ---
+    const CATEGORIAS_MATRIZ = {
+      "Gestión PROINT": [
+        "Evaluación de Riesgo de Instalaciones",
+        "Auditoría de Protocolos de Seguridad",
+        "Inspección de Centros de Control (CAR)",
+        "Capacitación de Personal PROINT"
+      ],
+      "Delincuencia Organizada": [
+        "Robo con Violencia a Transporte",
+        "Extorsión / Cobro de Piso",
+        "Vandalismo Organizado a Cedis",
+        "Intento de Sabotaje a Flota"
+      ],
+      "Seguridad en Ruta y Flota": [
+        "Desvío de Ruta No Autorizado",
+        "Pérdida de Señal GPS por Jammer",
+        "Accidente Vial en Transito",
+        "Detención No Programada de Unidad"
+      ],
+      "Conflictividad Social": [
+        "Bloqueo de Vía Pública / Marchas",
+        "Manifestaciones Frente a Cedis/Planta",
+        "Paro de Transporte Regional",
+        "Intento de Saqueo / Asonada"
+      ],
+      "Seguridad Física y Patrimonial": [
+        "Intrusión Perimetral",
+        "Hurto Interno de Producto / Activos",
+        "Faltante Detectado en Cedis",
+        "Daño a Infraestructura Patrimonial"
+      ],
+      "Riesgos de Salud y Bioseguridad": [
+        "Brote Epidemiológico Interno",
+        "Incidente por Sustancia Nociva",
+        "Incumplimiento de Filtro Bioseguridad",
+        "Emergencia Médica de Operador"
+      ],
+      "Servicios Públicos": [
+        "Corte Prolongado de Energía Eléctrica",
+        "Falla de Servicio de Agua Potable",
+        "Caída de Enlace Telecomunicaciones Externa",
+        "Interrupción de Gas Natural"
+      ],
+      "Ética y Cumplimiento": [
+        "Infracción al Código de Conducta",
+        "Uso Indebido de Vehículo Oficial",
+        "Intento de Soborno / Fraude",
+        "Conflicto de Interés Declarado"
+      ],
+      "Legal e Institucional": [
+        "Inspección de Autoridad Municipal / Estatal",
+        "Auditoría de Entidad Laboral",
+        "Notificación / Requerimiento Judicial",
+        "Clausura Preventiva Operativa"
+      ],
+      "Eventos Naturales": [
+        "Inundación / Anegamiento",
+        "Sismo / Terremoto",
+        "Vientos Fuerte / Caída de Árboles",
+        "Granizada Severa / Tormenta"
+      ],
+      "Emergencias Industriales": [
+        "Fuga de Gas / Amoniaco",
+        "Incendio Estructural o de Almacén",
+        "Derrame de Químicos Industriales",
+        "Falla Mayor en Caldera / Compresores"
+      ],
+      "TYPP Tecnología y Proyecto": [
+        "Falla de Cámaras CCTV",
+        "Falla de Sistema Control de Acceso",
+        "Falla / Caída Servidor VMS",
+        "Mantenimiento Preventivo Tecnológico",
+        "Instalación / Proyecto Nuevo"
+      ]
+    };
+
+    const MOCK_CHECKLIST = [
+      { id: 'chk_videowall', label: 'Videowall y Pantallas de Monitoreo', desc: 'Verificación de encendido, señal de video y estado general.' },
+      { id: 'chk_vms', label: 'Sistema VMS y Grabadores CCTV', desc: 'Revisión de licencias, canales online y almacenamiento.' },
+      { id: 'chk_gps', label: 'Plataforma de Rastreo GPS y Telemetría', desc: 'Visualización correcta de unidades en tiempo real.' },
+      { id: 'chk_comms', label: 'Consola de Radio y Telecomunicaciones', desc: 'Prueba de comunicación con repetidores y unidades.' },
+      { id: 'chk_energia', label: 'Respaldo de Energía (UPS / Planta)', desc: 'Indicadores en verde, carga de batería adecuada.' },
+      { id: 'chk_orden', label: 'Orden y Limpieza de la Central CAR', desc: 'Consola limpia, entrega de llaves y documentación.' }
+    ];
+
+    let currentEvidenciaBase64 = null;
+    let chartCatInstance = null;
+    let chartCritInstance = null;
+
+    // --- INITIALIZATION ---
+    window.onload = function() {
+      seedDataIfEmpty();
+      renderChecklistForm();
+      updateSubcategorias();
+      
+      // Auto set datetime-local to NOW
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('m2-fecha-hora').value = now.toISOString().slice(0,16);
+
+      // Default view check
+      const auth = localStorage.getItem('car_authenticated');
+      if (auth === 'true') {
+        document.getElementById('screen-login').classList.add('hidden');
+        document.getElementById('app-header').classList.remove('hidden');
+        navigateTo('hub');
+      }
+    };
+
+    // --- SEED DATA ---
+    function seedDataIfEmpty() {
+      if (!localStorage.getItem('car_guardias')) {
+        const mockGuardias = [
+          {
+            id: 'g-1',
+            fecha: '2026-11-10 14:00',
+            turno: 'Mañana (06:00 - 14:00)',
+            opEntrante: 'Juan Pérez',
+            opSaliente: 'Carlos Mendoza',
+            supervisor: 'Fernando Silva',
+            infraStatus: 'OK (100% Funcional)',
+            observaciones: 'Guardia sin novedades. Todo el equipamiento operando normalmente.'
+          },
+          {
+            id: 'g-2',
+            fecha: '2026-11-11 22:00',
+            turno: 'Tarde (14:00 - 22:00)',
+            opEntrante: 'María Rodríguez',
+            opSaliente: 'Juan Pérez',
+            supervisor: 'Fernando Silva',
+            infraStatus: 'Con Novedades',
+            observaciones: 'Falla menor en canal 4 de Videowall. Reportado a TYPP.'
+          }
+        ];
+        localStorage.setItem('car_guardias', JSON.stringify(mockGuardias));
+      }
+
+      if (!localStorage.getItem('car_eventos')) {
+        const mockEventos = [
+          {
+            id: 'ev-101',
+            persona: 'Encargado CAR - Juan Pérez',
+            tipoUnidad: 'Operativa',
+            nombreUnidad: 'CEDIS Toluca',
+            fechaHora: '2026-11-10 10:30',
+            criticidad: 'Alto',
+            categoria: 'TYPP Tecnología y Proyecto',
+            subcategoria: 'Falla de Cámaras CCTV',
+            descripcion: 'Pérdida de señal en 5 cámaras perimetrales marca Axis debido a corte de fibra interna.',
+            evidencia: null,
+            typpData: { axis: 5, hik: 0, dahua: 0, otras: 0 },
+            gpData: null
+          },
+          {
+            id: 'ev-102',
+            persona: 'OMT Ruta 1 - Roberto Gómez',
+            tipoUnidad: 'No Operativa',
+            nombreUnidad: 'Ruta 57 - Km 88',
+            fechaHora: '2026-11-11 08:15',
+            criticidad: 'Crítico',
+            categoria: 'Delincuencia Organizada',
+            subcategoria: 'Robo con Violencia a Transporte',
+            descripcion: 'Intento de asalto a unidad repartidora. Botón de pánico activado por conductor.',
+            evidencia: null,
+            typpData: null,
+            gpData: { bienes: 'Unidad T-450 y 80 cajas', monto: '45000' }
+          },
+          {
+            id: 'ev-103',
+            persona: 'Líder de Seguridad - Carlos Mendoza',
+            tipoUnidad: 'Operativa',
+            nombreUnidad: 'Planta Vallejo',
+            fechaHora: '2026-11-12 09:00',
+            criticidad: 'Bajo',
+            categoria: 'Gestión PROINT',
+            subcategoria: 'Auditoría de Protocolos de Seguridad',
+            descripcion: 'Ejecución de simulacro de intrusión programado. Resultados satisfactorios.',
+            evidencia: null,
+            typpData: null,
+            gpData: null
+          }
+        ];
+        localStorage.setItem('car_eventos', JSON.stringify(mockEventos));
+      }
+    }
+
+    // --- NAVIGATION & SCREEN CONTROL ---
+    function navigateTo(screenId) {
+      // Hide all screens
+      document.getElementById('screen-hub').classList.add('hidden');
+      document.getElementById('screen-mod1').classList.add('hidden');
+      document.getElementById('screen-mod2').classList.add('hidden');
+
+      if (screenId === 'hub') {
+        document.getElementById('screen-hub').classList.remove('hidden');
+        updateHubStats();
+      } else if (screenId === 'mod1') {
+        document.getElementById('screen-mod1').classList.remove('hidden');
+        switchTabMod1('form');
+        renderMod1Table();
+      } else if (screenId === 'mod2') {
+        document.getElementById('screen-mod2').classList.remove('hidden');
+        switchTabMod2('form');
+        renderMod2Dashboard();
+      }
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const pass = document.getElementById('input-pass').value;
+      if (pass === 'CAR2026') {
+        localStorage.setItem('car_authenticated', 'true');
+        document.getElementById('screen-login').classList.add('hidden');
+        document.getElementById('app-header').classList.remove('hidden');
+        document.getElementById('login-error').classList.add('hidden');
+        navigateTo('hub');
+        showToast('Acceso concedido a CAR MASTER');
+      } else {
+        document.getElementById('login-error').classList.remove('hidden');
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('car_authenticated');
+      document.getElementById('app-header').classList.add('hidden');
+      document.getElementById('screen-hub').classList.add('hidden');
+      document.getElementById('screen-mod1').classList.add('hidden');
+      document.getElementById('screen-mod2').classList.add('hidden');
+      document.getElementById('screen-login').classList.remove('hidden');
+      document.getElementById('input-pass').value = '';
+    }
+
+    function updateHubStats() {
+      const g = JSON.parse(localStorage.getItem('car_guardias') || '[]');
+      const e = JSON.parse(localStorage.getItem('car_eventos') || '[]');
+      document.getElementById('stat-hub-mod1').textContent = `${g.length} entregas de guardia registradas`;
+      document.getElementById('stat-hub-mod2').textContent = `${e.length} eventos 24/7 reportados`;
+    }
+
+    // --- MÓDULO 1 LOGIC ---
+    function renderChecklistForm() {
+      const container = document.getElementById('m1-checklist-container');
+      container.innerHTML = '';
+
+      MOCK_CHECKLIST.forEach(item => {
+        const div = document.createElement('div');
+        div.className = "p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3";
+        div.innerHTML = `
+          <div>
+            <p class="text-xs font-bold text-slate-800">${item.label}</p>
+            <p class="text-[11px] text-slate-400">${item.desc}</p>
+          </div>
+          <div class="flex items-center space-x-3 w-full sm:w-auto">
+            <select id="${item.id}-status" onchange="toggleChecklistNotes('${item.id}')" class="p-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-blue-500">
+              <option value="OK">🟢 OK / Operativo</option>
+              <option value="NOVEDAD">🔴 Novedad / Falla</option>
+            </select>
+            <input type="text" id="${item.id}-note" placeholder="Especifique la novedad..." class="hidden flex-1 sm:w-64 p-2 bg-white border border-red-300 rounded-lg text-xs text-red-600 focus:ring-1 focus:ring-red-500">
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function toggleChecklistNotes(id) {
+      const st = document.getElementById(`${id}-status`).value;
+      const input = document.getElementById(`${id}-note`);
+      if (st === 'NOVEDAD') {
+        input.classList.remove('hidden');
+        input.required = true;
+      } else {
+        input.classList.add('hidden');
+        input.required = false;
+        input.value = '';
+      }
+    }
+
+    function switchTabMod1(tab) {
+      if (tab === 'form') {
+        document.getElementById('view-mod1-form').classList.remove('hidden');
+        document.getElementById('view-mod1-dash').classList.add('hidden');
+        document.getElementById('tab-mod1-form').className = "flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition bg-white text-slate-900 shadow";
+        document.getElementById('tab-mod1-dash').className = "flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+      } else {
+        document.getElementById('view-mod1-form').classList.add('hidden');
+        document.getElementById('view-mod1-dash').classList.remove('hidden');
+        document.getElementById('tab-mod1-dash').className = "flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition bg-white text-slate-900 shadow";
+        document.getElementById('tab-mod1-form').className = "flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+        renderMod1Table();
+      }
+    }
+
+    function saveGuardia(e) {
+      e.preventDefault();
+      let hasNovedad = false;
+      let novedadesDetalle = [];
+
+      MOCK_CHECKLIST.forEach(item => {
+        const st = document.getElementById(`${item.id}-status`).value;
+        const note = document.getElementById(`${item.id}-note`).value;
+        if (st === 'NOVEDAD') {
+          hasNovedad = true;
+          novedadesDetalle.push(`${item.label}: ${note}`);
+        }
+      });
+
+      const newGuardia = {
+        id: 'g-' + Date.now(),
+        fecha: new Date().toLocaleString(),
+        turno: document.getElementById('m1-turno').value,
+        opEntrante: document.getElementById('m1-op-entrante').value,
+        opSaliente: document.getElementById('m1-op-saliente').value,
+        supervisor: document.getElementById('m1-supervisor').value,
+        infraStatus: hasNovedad ? 'Con Novedades' : 'OK (100% Funcional)',
+        observaciones: document.getElementById('m1-observaciones').value + (hasNovedad ? ` | NOVEDADES: ${novedadesDetalle.join('; ')}` : '')
+      };
+
+      const guardias = JSON.parse(localStorage.getItem('car_guardias') || '[]');
+      guardias.unshift(newGuardia);
+      localStorage.setItem('car_guardias', JSON.stringify(guardias));
+
+      showToast('Entrega de Guardia registrada correctamente');
+      switchTabMod1('dash');
+    }
+
+    function renderMod1Table() {
+      const guardias = JSON.parse(localStorage.getItem('car_guardias') || '[]');
+      const tbody = document.getElementById('table-mod1-body');
+      tbody.innerHTML = '';
+
+      let total = guardias.length;
+      let okCount = 0;
+      let novCount = 0;
+
+      guardias.forEach(g => {
+        if (g.infraStatus.includes('OK')) okCount++;
+        else novCount++;
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50";
+        tr.innerHTML = `
+          <td class="p-3 font-medium text-slate-700">${g.fecha}</td>
+          <td class="p-3 text-slate-600">${g.turno}</td>
+          <td class="p-3 text-slate-800 font-semibold">${g.opEntrante}</td>
+          <td class="p-3 text-slate-600">${g.opSaliente}</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${g.infraStatus.includes('OK') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+              ${g.infraStatus}
+            </span>
+          </td>
+          <td class="p-3 text-slate-500 max-w-xs truncate">${g.observaciones || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('kpi-m1-total').textContent = total;
+      document.getElementById('kpi-m1-ok').textContent = okCount;
+      document.getElementById('kpi-m1-novedad').textContent = novCount;
+    }
+
+    // --- MÓDULO 2 LOGIC ---
+    function toggleUnidadInput() {
+      const tipo = document.getElementById('m2-tipo-unidad').value;
+      const lbl = document.getElementById('m2-lbl-unidad');
+      const input = document.getElementById('m2-nombre-unidad');
+
+      if (tipo === 'Operativa') {
+        lbl.textContent = 'Nombre de la Unidad Operativa (CEDIS / Planta) *';
+        input.placeholder = 'Ej. CEDIS Toluca, Planta Vallejo...';
+      } else {
+        lbl.textContent = 'Nombre de Ubicación / Tramo No Operativo *';
+        input.placeholder = 'Ej. Ruta 57 Km 120, Transporte Terceario...';
+      }
+    }
+
+    function updateSubcategorias() {
+      const catSelect = document.getElementById('m2-categoria');
+      const subSelect = document.getElementById('m2-subcategoria');
+      const selectedCat = catSelect.value;
+
+      subSelect.innerHTML = '<option value="">-- Seleccione Subcategoría --</option>';
+
+      if (selectedCat && CATEGORIAS_MATRIZ[selectedCat]) {
+        CATEGORIAS_MATRIZ[selectedCat].forEach(sub => {
+          const opt = document.createElement('option');
+          opt.value = sub;
+          opt.textContent = sub;
+          subSelect.appendChild(opt);
+        });
+      }
+
+      // Toggle special conditional sections
+      const boxTypp = document.getElementById('m2-box-typp');
+      const boxGp = document.getElementById('m2-box-gp');
+
+      if (selectedCat === 'TYPP Tecnología y Proyecto') {
+        boxTypp.classList.remove('hidden');
+      } else {
+        boxTypp.classList.add('hidden');
+      }
+
+      if (selectedCat === 'Seguridad Física y Patrimonial' || selectedCat === 'Delincuencia Organizada') {
+        boxGp.classList.remove('hidden');
+      } else {
+        boxGp.classList.add('hidden');
+      }
+    }
+
+    function previewEvidencia(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          currentEvidenciaBase64 = evt.target.result;
+          document.getElementById('m2-preview-img').src = currentEvidenciaBase64;
+          document.getElementById('m2-file-name').textContent = file.name;
+          document.getElementById('m2-preview-container').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function clearEvidencia() {
+      currentEvidenciaBase64 = null;
+      document.getElementById('m2-archivo').value = '';
+      document.getElementById('m2-preview-container').classList.add('hidden');
+    }
+
+    function switchTabMod2(tab) {
+      if (tab === 'form') {
+        document.getElementById('view-mod2-form').classList.remove('hidden');
+        document.getElementById('view-mod2-dash').classList.add('hidden');
+        document.getElementById('tab-mod2-form').className = "flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition bg-white text-slate-900 shadow";
+        document.getElementById('tab-mod2-dash').className = "flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+      } else {
+        document.getElementById('view-mod2-form').classList.add('hidden');
+        document.getElementById('view-mod2-dash').classList.remove('hidden');
+        document.getElementById('tab-mod2-dash').className = "flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition bg-white text-slate-900 shadow";
+        document.getElementById('tab-mod2-form').className = "flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+        renderMod2Dashboard();
+      }
+    }
+
+    function saveEvento(e) {
+      e.preventDefault();
+
+      const cat = document.getElementById('m2-categoria').value;
+      const criticidadRadios = document.getElementsByName('m2-criticidad');
+      let criticidadVal = 'Bajo';
+      for (const r of criticidadRadios) {
+        if (r.checked) {
+          criticidadVal = r.value;
+          break;
+        }
+      }
+
+      let typpData = null;
+      if (cat === 'TYPP Tecnología y Proyecto') {
+        typpData = {
+          axis: document.getElementById('typp-axis').value || 0,
+          hik: document.getElementById('typp-hikvision').value || 0,
+          dahua: document.getElementById('typp-dahua').value || 0,
+          otras: document.getElementById('typp-otras').value || 0
+        };
+      }
+
+      let gpData = null;
+      if (cat === 'Seguridad Física y Patrimonial' || cat === 'Delincuencia Organizada') {
+        gpData = {
+          bienes: document.getElementById('gp-bienes').value,
+          monto: document.getElementById('gp-monto').value
+        };
+      }
+
+      const newEvento = {
+        id: 'ev-' + Date.now(),
+        persona: document.getElementById('m2-persona').value,
+        tipoUnidad: document.getElementById('m2-tipo-unidad').value,
+        nombreUnidad: document.getElementById('m2-nombre-unidad').value,
+        fechaHora: document.getElementById('m2-fecha-hora').value.replace('T', ' '),
+        criticidad: criticidadVal,
+        categoria: cat,
+        subcategoria: document.getElementById('m2-subcategoria').value,
+        descripcion: document.getElementById('m2-descripcion').value,
+        evidencia: currentEvidenciaBase64,
+        typpData: typpData,
+        gpData: gpData
+      };
+
+      const eventos = JSON.parse(localStorage.getItem('car_eventos') || '[]');
+      eventos.unshift(newEvento);
+      localStorage.setItem('car_eventos', JSON.stringify(eventos));
+
+      // Reset form
+      clearEvidencia();
+      showToast('Evento 24/7 registrado e integrado al Dashboard');
+      switchTabMod2('dash');
+    }
+
+    function renderMod2Dashboard() {
+      const eventos = JSON.parse(localStorage.getItem('car_eventos') || '[]');
+      
+      // 1. KPI Counts
+      let total = eventos.length;
+      let criticos = 0;
+      let evidencias = 0;
+      let categoriesSet = new Set();
+
+      // Counts per main category dictionary initialization
+      const categoryCounts = {};
+      Object.keys(CATEGORIAS_MATRIZ).forEach(cat => categoryCounts[cat] = 0);
+
+      const criticidadCounts = { "Bajo": 0, "Medio": 0, "Alto": 0, "Crítico": 0 };
+
+      eventos.forEach(ev => {
+        if (ev.criticidad === 'Crítico') criticos++;
+        if (ev.evidencia) evidencias++;
+        if (ev.categoria) {
+          categoriesSet.add(ev.categoria);
+          categoryCounts[ev.categoria] = (categoryCounts[ev.categoria] || 0) + 1;
+        }
+        if (ev.criticidad) {
+          criticidadCounts[ev.criticidad] = (criticidadCounts[ev.criticidad] || 0) + 1;
+        }
+      });
+
+      document.getElementById('kpi-m2-total').textContent = total;
+      document.getElementById('kpi-m2-criticos').textContent = criticos;
+      document.getElementById('kpi-m2-evidencias').textContent = evidencias;
+      document.getElementById('kpi-m2-cats-count').textContent = categoriesSet.size;
+
+      // 2. Render Bar Chart for All 12 Categories
+      renderCategoryChart(categoryCounts);
+
+      // 3. Render Doughnut Chart for Criticidad
+      renderCriticidadChart(criticidadCounts);
+
+      // 4. Render Category Cards Breakdown
+      renderCategoryCards(categoryCounts);
+
+      // 5. Render History Table
+      renderMod2Table(eventos);
+    }
+
+    function renderCategoryChart(categoryCounts) {
+      const ctx = document.getElementById('chart-categorias').getContext('2d');
+      const labels = Object.keys(categoryCounts).map(c => c.length > 18 ? c.substring(0, 18) + '...' : c);
+      const dataValues = Object.values(categoryCounts);
+
+      if (chartCatInstance) chartCatInstance.destroy();
+
+      chartCatInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Cantidad de Eventos',
+            data: dataValues,
+            backgroundColor: '#E61C24',
+            borderRadius: 6,
+            hoverBackgroundColor: '#B81118'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { precision: 0 }
+            },
+            x: {
+              ticks: { font: { size: 9 }, maxRotation: 45, minRotation: 45 }
+            }
+          }
+        }
+      });
+    }
+
+    function renderCriticidadChart(counts) {
+      const ctx = document.getElementById('chart-criticidad').getContext('2d');
+      if (chartCritInstance) chartCritInstance.destroy();
+
+      chartCritInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Bajo', 'Medio', 'Alto', 'Crítico'],
+          datasets: [{
+            data: [counts['Bajo'], counts['Medio'], counts['Alto'], counts['Crítico']],
+            backgroundColor: ['#10B981', '#F59E0B', '#F97316', '#EF4444']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    function renderCategoryCards(categoryCounts) {
+      const container = document.getElementById('container-category-cards');
+      container.innerHTML = '';
+
+      Object.keys(CATEGORIAS_MATRIZ).forEach(cat => {
+        const count = categoryCounts[cat] || 0;
+        const div = document.createElement('div');
+        div.className = "p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between";
+        div.innerHTML = `
+          <div class="truncate mr-2">
+            <p class="text-xs font-bold text-slate-800 truncate">${cat}</p>
+            <p class="text-[10px] text-slate-400">${CATEGORIAS_MATRIZ[cat].length} Subcategorías</p>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-xs font-black ${count > 0 ? 'bg-femsa-red text-white' : 'bg-slate-200 text-slate-600'}">
+            ${count}
+          </span>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderMod2Table(eventos) {
+      const tbody = document.getElementById('table-mod2-body');
+      tbody.innerHTML = '';
+
+      eventos.forEach(ev => {
+        let badgeClass = 'badge-criticidad-bajo';
+        if (ev.criticidad === 'Medio') badgeClass = 'badge-criticidad-medio';
+        if (ev.criticidad === 'Alto') badgeClass = 'badge-criticidad-alto';
+        if (ev.criticidad === 'Crítico') badgeClass = 'badge-criticidad-critico';
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50";
+        tr.innerHTML = `
+          <td class="p-3 font-medium text-slate-700 whitespace-nowrap">${ev.fechaHora}</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeClass}">
+              ${ev.criticidad}
+            </span>
+          </td>
+          <td class="p-3 text-slate-800 font-semibold">${ev.persona}</td>
+          <td class="p-3 text-slate-700">${ev.nombreUnidad} <span class="text-[10px] text-slate-400">(${ev.tipoUnidad})</span></td>
+          <td class="p-3 text-slate-600">
+            <span class="font-bold text-slate-800">${ev.categoria}</span><br>
+            <span class="text-[10px] text-slate-400">${ev.subcategoria}</span>
+          </td>
+          <td class="p-3">
+            ${ev.evidencia ? '<span class="text-emerald-600 font-bold"><i class="fa-solid fa-image"></i> Si</span>' : '<span class="text-slate-400">No</span>'}
+          </td>
+          <td class="p-3 text-right">
+            <button onclick="openModal('${ev.id}')" class="px-2.5 py-1 bg-slate-800 hover:bg-femsa-red text-white text-[10px] font-bold rounded-md transition">
+              Ver Detalle
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterEventosTable() {
+      const q = document.getElementById('m2-search-input').value.toLowerCase();
+      const eventos = JSON.parse(localStorage.getItem('car_eventos') || '[]');
+      const filtered = eventos.filter(ev => 
+        ev.persona.toLowerCase().includes(q) ||
+        ev.nombreUnidad.toLowerCase().includes(q) ||
+        ev.categoria.toLowerCase().includes(q) ||
+        ev.subcategoria.toLowerCase().includes(q)
+      );
+      renderMod2Table(filtered);
+    }
+
+    // --- MODAL & TOAST UTILS ---
+    function openModal(id) {
+      const eventos = JSON.parse(localStorage.getItem('car_eventos') || '[]');
+      const ev = eventos.find(item => item.id === id);
+      if (!ev) return;
+
+      const container = document.getElementById('modal-content');
+      container.innerHTML = `
+        <div class="space-y-3">
+          <div class="flex justify-between items-start border-b border-slate-100 pb-2">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400">ID: ${ev.id}</span>
+              <h4 class="text-sm font-bold text-slate-900">${ev.categoria}</h4>
+              <p class="text-xs text-femsa-red font-semibold">${ev.subcategoria}</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${ev.criticidad === 'Crítico' ? 'bg-red-600' : 'bg-amber-500'}">${ev.criticidad}</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+            <div><strong>Reportado por:</strong> ${ev.persona}</div>
+            <div><strong>Fecha/Hora:</strong> ${ev.fechaHora}</div>
+            <div><strong>Ubicación:</strong> ${ev.nombreUnidad}</div>
+            <div><strong>Tipo Unidad:</strong> ${ev.tipoUnidad}</div>
+          </div>
+
+          <div>
+            <strong class="block text-slate-800 mb-1">Descripción:</strong>
+            <p class="p-2.5 bg-slate-50 rounded border border-slate-200 text-slate-700 leading-relaxed">${ev.descripcion}</p>
+          </div>
+
+          ${ev.typpData ? `
+            <div class="p-2.5 bg-slate-900 text-white rounded text-[11px]">
+              <strong class="text-femsa-red">Detalle Conteo TYPP:</strong>
+              <div class="grid grid-cols-4 gap-1 mt-1 text-center">
+                <div class="bg-slate-800 p-1 rounded">Axis: ${ev.typpData.axis}</div>
+                <div class="bg-slate-800 p-1 rounded">Hik: ${ev.typpData.hik}</div>
+                <div class="bg-slate-800 p-1 rounded">Dahua: ${ev.typpData.dahua}</div>
+                <div class="bg-slate-800 p-1 rounded">Otras: ${ev.typpData.otras}</div>
+              </div>
+            </div>
+          ` : ''}
+
+          ${ev.gpData ? `
+            <div class="p-2.5 bg-amber-50 text-amber-900 border border-amber-200 rounded text-[11px]">
+              <strong>Gestión Recuperación GP:</strong>
+              <p>Bienes: ${ev.gpData.bienes || 'N/A'}</p>
+              <p>Monto Estimado: $${ev.gpData.monto || '0'}</p>
+            </div>
+          ` : ''}
+
+          ${ev.evidencia ? `
+            <div>
+              <strong class="block text-slate-800 mb-1">Evidencia Fotografíca Adjunta:</strong>
+              <img src="${ev.evidencia}" class="max-h-48 rounded border border-slate-300 w-full object-cover">
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      document.getElementById('modal-evento').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modal-evento').classList.add('hidden');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3500);
+    }
+  </script>
+</body>
+</html>
