@@ -74,7 +74,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       
       <!-- Escudo Oficial & Título -->
-      <div class="flex items-center space-x-3 cursor-pointer group" onclick="navigateTo('hub')">
+      <div id="header-brand" class="flex items-center space-x-3 cursor-pointer group" onclick="handleBrandClick()">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-femsa-red to-femsa-darkred flex items-center justify-center text-white shadow-lg shadow-femsa-red/25 group-hover:scale-105 transition-transform">
           <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/>
@@ -87,18 +87,22 @@
         </div>
       </div>
 
-      <!-- Único Botón de Navegación: Menú Principal (Hub) + Cerrar Sesión -->
+      <!-- Único Botón de Navegación: Menú Principal (Hub) + Badge de Rol + Cerrar Sesión -->
       <div class="flex items-center space-x-3">
         <button id="btn-back-hub" onclick="navigateTo('hub')" class="hidden px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 hover:border-femsa-red/50 transition flex items-center space-x-2 shadow-sm">
           <i class="fa-solid fa-grip text-femsa-red"></i>
           <span>Menú Principal (Hub)</span>
         </button>
 
+        <span id="badge-role-pi" class="hidden px-3 py-1.5 rounded-xl bg-femsa-red/15 border border-femsa-red/40 text-[10px] font-black tracking-wider text-femsa-red uppercase">
+          <i class="fa-solid fa-shield-halved mr-1"></i> ACCESO PI | REGISTRO 24/7
+        </span>
+
         <div class="hidden sm:flex items-center space-x-2 pl-2 border-l border-slate-800">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <div class="text-right">
-            <p class="text-xs font-bold text-slate-200 leading-none">Consola CAR 24/7</p>
-            <p class="text-[10px] text-slate-500 mt-0.5">Protección Integral</p>
+            <p id="header-console-title" class="text-xs font-bold text-slate-200 leading-none">Consola CAR 24/7</p>
+            <p id="header-console-sub" class="text-[10px] text-slate-500 mt-0.5">Protección Integral</p>
           </div>
         </div>
 
@@ -155,9 +159,6 @@
                 <label for="input-pass" class="block text-xs font-bold text-slate-300 uppercase tracking-wider">
                   Clave de Acceso Operativo
                 </label>
-                <button type="button" onclick="fillQuickPass()" class="text-[11px] font-semibold text-femsa-red hover:text-red-400 transition">
-                  <i class="fa-solid fa-bolt mr-1"></i>Autocompletar Demo
-                </button>
               </div>
               <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
@@ -166,7 +167,7 @@
                 <input 
                   type="password" 
                   id="input-pass" 
-                  placeholder="Ingrese clave (CAR2026)" 
+                  placeholder="Ingrese clave operativa" 
                   required 
                   class="w-full pl-10 pr-4 py-3.5 bg-zinc-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-femsa-red focus:border-transparent transition font-mono text-sm tracking-widest"
                 />
@@ -1261,17 +1262,14 @@
       { id: 'chk_orden', label: 'Orden y Limpieza', desc: 'Consolas despejadas, bitácora al día y resguardo de llaves' }
     ];
 
-    // Estado temporal de fotos cargadas en el formulario
     let pendingPhotos = [];
-    
-    // Instancias Chart.js
     let chartM1Trend = null;
     let chartM1Monthly = null;
     let chartM2Tendencia = null;
     let chartM2Torta = null;
     let chartM2Categorias = null;
 
-    // --- INICIALIZACIÓN ---
+    // --- INICIALIZACIÓN Y DATOS DE PRUEBA ---
     window.onload = function() {
       seedInitialData();
       populateDropdowns();
@@ -1280,365 +1278,307 @@
       setDefaultDates();
       updateNextFolioPreviews();
 
-      if (localStorage.getItem('car_master_auth') === 'true') {
+      const savedAuth = localStorage.getItem('car_master_auth');
+      const savedRole = localStorage.getItem('car_master_role') || 'CAR';
+
+      if (savedAuth === 'true') {
         document.getElementById('screen-login').classList.add('hidden');
         document.getElementById('app-header').classList.remove('hidden');
-        navigateTo('hub');
+        applyRoleUI(savedRole);
+        if (savedRole === 'PI') {
+          navigateTo('mod2');
+        } else {
+          navigateTo('hub');
+        }
       }
     };
 
-    function setDefaultDates() {
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, '0');
-      const dd = String(now.getDate()).padStart(2, '0');
-      const hh = String(now.getHours()).padStart(2, '0');
-      const min = String(now.getMinutes()).padStart(2, '0');
+    function applyRoleUI(role) {
+      const badgePi = document.getElementById('badge-role-pi');
+      const consoleTitle = document.getElementById('header-console-title');
+      const consoleSub = document.getElementById('header-console-sub');
 
-      document.getElementById('m1-fecha').value = `${yyyy}-${mm}-${dd}`;
-      document.getElementById('m2-fecha-hora').value = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+      if (role === 'PI') {
+        if (badgePi) badgePi.classList.remove('hidden');
+        if (consoleTitle) consoleTitle.textContent = 'Protección Integral';
+        if (consoleSub) consoleSub.textContent = 'Módulo 2 • Registro 24/7';
+      } else {
+        if (badgePi) badgePi.classList.add('hidden');
+        if (consoleTitle) consoleTitle.textContent = 'Consola CAR 24/7';
+        if (consoleSub) consoleSub.textContent = 'Protección Integral';
+      }
     }
 
-    function populateDropdowns() {
-      // 17 Operadores Módulo 1
-      const selSaliente = document.getElementById('m1-op-saliente');
-      const selEntrante = document.getElementById('m1-op-entrante');
-      OPERADORES_CAR.forEach((op, idx) => {
-        selSaliente.add(new Option(op, op));
-        selEntrante.add(new Option(op, op, false, idx === 1));
-      });
-
-      // 32 Personas que Reportan (Módulo 2)
-      const selPersona = document.getElementById('m2-persona');
-      PERSONAS_REPORTAN.forEach(p => {
-        selPersona.add(new Option(p, p));
-      });
-
-      // 28 Unidades Operativas con Siglas (Módulo 2 + Filtro Dashboard)
-      const selLocalidad = document.getElementById('m2-localidad');
-      const selDashLoc = document.getElementById('dash-filter-unidad');
-      UNIDADES_OPERATIVAS.forEach(u => {
-        const label = `${u.nombre} - ${u.sigla}`;
-        selLocalidad.add(new Option(label, label));
-        selDashLoc.add(new Option(label, label));
-      });
-
-      // 12 Categorías Matriz CAR (Módulo 2)
-      const selCat = document.getElementById('m2-categoria');
-      Object.keys(MATRIZ_CAR).forEach(cat => {
-        selCat.add(new Option(cat, cat));
-      });
-    }
-
-    function renderSpecialFormSections() {
-      // Render Matriz TYPP (NVR 1..3, XVR 1..3, DVR 1..3)
-      const typpBody = document.getElementById('typp-matrix-body');
-      typpBody.innerHTML = '';
-      TYPP_EQUIPOS.forEach((eq, i) => {
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-900/50";
-        tr.innerHTML = `
-          <td class="p-2 font-bold text-slate-200">${eq}</td>
-          <td class="p-2 text-center"><input type="radio" name="typp_eq_${i}" value="DAHUA" class="accent-blue-500 cursor-pointer"></td>
-          <td class="p-2 text-center"><input type="radio" name="typp_eq_${i}" value="HIKVISION" class="accent-blue-500 cursor-pointer"></td>
-          <td class="p-2 text-center"><input type="radio" name="typp_eq_${i}" value="OTRAS" class="accent-blue-500 cursor-pointer"></td>
-        `;
-        typpBody.appendChild(tr);
-      });
-
-      // Render Checkboxes GP
-      const gpGrid = document.getElementById('gp-checkboxes-grid');
-      gpGrid.innerHTML = '';
-      GP_OPCIONES.forEach((opt, idx) => {
-        const lbl = document.createElement('label');
-        lbl.className = "flex items-center space-x-2 p-2 rounded-lg bg-zinc-950 border border-slate-800 hover:border-amber-500/50 cursor-pointer text-[11px] text-slate-200";
-        lbl.innerHTML = `
-          <input type="checkbox" name="gp_check" value="${opt}" id="gp_chk_${idx}" class="rounded accent-amber-500">
-          <span>${opt}</span>
-        `;
-        gpGrid.appendChild(lbl);
-      });
-    }
-
-    // --- DATOS PRECARGADOS REALISTAS CON NUEVOS FOLIOS Y NOMENCLATURA ---
     function seedInitialData() {
       if (!localStorage.getItem('car_master_guardias_v3')) {
-        const guardiasSeed = [
+        const sampleGuardias = [
           {
-            folio: 'EG18102026',
-            fecha: '2026-10-18',
-            turno: 'Nocturno (19:00 - 07:00)',
-            opSaliente: 'OMT Rockmell Aponte',
-            opEntrante: 'OMT Lider Aramis Freites',
+            folio: "EG15112026",
+            fecha: "2026-11-15",
+            turno: "Diurno (07:00 - 19:00)",
+            opSaliente: "OMT Lider Aramis Freites",
+            opEntrante: "OMT Lider Marco Zerpa",
             operatividadPct: 100,
-            estadoGeneral: '100% Operativo',
+            estadoGeneral: "100% Operativo",
             novedades: [],
-            observaciones: 'Turno nocturno sin novedad en rutas primarias Valencia-Caracas.'
+            observaciones: "Turno sin novedad técnica. Todo operando al 100%."
           },
           {
-            folio: 'EG27102026',
-            fecha: '2026-10-27',
-            turno: 'Diurno (07:00 - 19:00)',
-            opSaliente: 'OMT Lider Marco Zerpa',
-            opEntrante: 'OMT Lider Elias Velazco',
+            folio: "EG16112026",
+            fecha: "2026-11-16",
+            turno: "Nocturno (19:00 - 07:00)",
+            opSaliente: "OMT Lider Marco Zerpa",
+            opEntrante: "OMT Lider Elias Velazco",
             operatividadPct: 83,
-            estadoGeneral: 'Con Novedad',
-            novedades: ['Comunicaciones / Radios: Interferencia en repetidora Oriente'],
-            observaciones: 'Se escaló ticket a soporte de telecomunicaciones.'
-          },
-          {
-            folio: 'EG05112026',
-            fecha: '2026-11-05',
-            turno: 'Nocturno (19:00 - 07:00)',
-            opSaliente: 'OMT Olga Gonzales',
-            opEntrante: 'OMT Lider Jesús Turizo',
-            operatividadPct: 100,
-            estadoGeneral: '100% Operativo',
-            novedades: [],
-            observaciones: 'Todos los enlaces VMS DSS Pro y Tracker GPS estables.'
-          },
-          {
-            folio: 'EG16112026',
-            fecha: '2026-11-16',
-            turno: 'Diurno (07:00 - 19:00)',
-            opSaliente: 'OMT Kelvin Sánchez',
-            opEntrante: 'OMT Edward Álvarez',
-            operatividadPct: 100,
-            estadoGeneral: '100% Operativo',
-            novedades: [],
-            observaciones: 'Relevo conforme. Monitoreo activo de despacho en Planta Valencia y Antímano.'
+            estadoGeneral: "Con Novedad",
+            novedades: ["Plataforma Tracker GPS: Latencia menor en 2 unidades"],
+            observaciones: "Se reportó a soporte técnico de GPS."
           }
         ];
-        localStorage.setItem('car_master_guardias_v3', JSON.stringify(guardiasSeed));
+        localStorage.setItem('car_master_guardias_v3', JSON.stringify(sampleGuardias));
       }
 
       if (!localStorage.getItem('car_master_eventos_v3')) {
-        const eventosSeed = [
-          // --- MES ANTERIOR (OCTUBRE 2026 - 5 eventos) ---
+        const sampleEventos = [
           {
-            folio: 'PTAVAL04102026',
-            persona: 'Encargado Valencia',
-            localidad: 'Planta Valencia - PTAVAL',
-            fechaHora: '2026-10-04 14:20',
-            criticidad: 'Alto',
-            categoria: 'Seguridad en Ruta y Flota',
-            subcategoria: 'Parada no autorizado',
-            descripcion: 'Unidad de transporte primario detuvo marcha 22 minutos en tramo La Victoria fuera de geocerca autorizada. Se estableció contacto radial con conductor confirmando falla mecánica menor.',
+            folio: "PTAVAL17112026",
+            persona: "Encargado Valencia",
+            localidad: "Planta Valencia",
+            fechaHora: "2026-11-17 08:30",
+            criticidad: "Alto",
+            categoria: "Seguridad Física y Patrimonial",
+            subcategoria: "Falla sistema de Videovigilancia",
+            descripcion: "Breve interrupción en servidor NVR 2 de Planta Valencia restablecida por soporte técnico en 15 minutos.",
             fotos: [],
-            typpData: null,
+            typpData: { totalCamaras: 64, detallePorEquipo: "NVR1: 32, NVR2: 32", equipos: [{ equipo: "NVR 1", marca: "HIKVISION" }] },
             gpData: null
           },
           {
-            folio: 'CDSVAL11102026',
-            persona: 'Jefe(a) Área Centro',
-            localidad: 'Cedis Valencia - CDSVAL',
-            fechaHora: '2026-10-11 09:45',
-            criticidad: 'Medio',
-            categoria: 'TYPP Tecnología y Proyecto',
-            subcategoria: 'Registro mensual sistema de Videovigilancia',
-            descripcion: 'Auditoría mensual de videovigilancia y revisión de grabadores NVR/XVR en patio de maniobras.',
-            fotos: [],
-            typpData: { totalCamaras: 48, detallePorEquipo: 'NVR1: 32 cam, XVR1: 16 cam', equipos: [{ equipo: 'NVR 1', marca: 'HIKVISION' }, { equipo: 'XVR 1', marca: 'DAHUA' }] },
-            gpData: null
-          },
-          {
-            folio: 'CDSBQTO16102026',
-            persona: 'Encargado Barquisimeto',
-            localidad: 'Cedis Barquisimeto - CDSBQTO',
-            fechaHora: '2026-10-16 17:10',
-            criticidad: 'Bajo',
-            categoria: 'Gestión PROINT',
-            subcategoria: 'Abordaje a ruta',
-            descripcion: 'Abordaje preventivo y recuperación de lote de 85 cestas plásticas y 40 cajas de producto durante auditoría en ruta.',
+            folio: "CDSANT17112026",
+            persona: "Encargado Antímano",
+            localidad: "Cedis Antímano",
+            fechaHora: "2026-11-17 09:15",
+            criticidad: "Medio",
+            categoria: "Gestión PROINT",
+            subcategoria: "Apoyo en vía pública",
+            descripcion: "Unidad de despacho reporta retención momentánea en acceso principal por obstáculo en vía pública.",
             fotos: [],
             typpData: null,
-            gpData: { checks: ['Apoyo CAR', 'Hubo Recuperación', 'Recuperación de Producto Terminado'], activos: '85 cestas y 40 cajas producto', monto: 1250 }
-          },
-          {
-            folio: 'PTABNA22102026',
-            persona: 'Encargado Barcelona',
-            localidad: 'Planta Barcelona - PTABNA',
-            fechaHora: '2026-10-22 21:30',
-            criticidad: 'Medio',
-            categoria: 'Servicios Públicos e Infraestructura',
-            subcategoria: 'Falla eléctrica Nacional/Regional/Estatal/Interna',
-            descripcion: 'Interrupción del suministro eléctrico comercial por 4 horas. Planta de emergencia operó sin novedad.',
-            fotos: [],
-            typpData: null,
-            gpData: null
-          },
-          {
-            folio: 'CDSCOR28102026',
-            persona: 'Encargado Cortijos',
-            localidad: 'Cedis Cortijos - CDSCOR',
-            fechaHora: '2026-10-28 11:15',
-            criticidad: 'Bajo',
-            categoria: 'Seguridad Física y Patrimonial',
-            subcategoria: 'Violación de Sellos o Precintos',
-            descripcion: 'Vehículo tercerizado presentó discrepancia en serial de precinto al ingreso. Subsanado con despacho.',
-            fotos: [],
-            typpData: null,
-            gpData: null
-          },
-
-          // --- MES ACTUAL (NOVIEMBRE 2026 - 7 eventos) ---
-          {
-            folio: 'CDSGUA02112026',
-            persona: 'Jefe(a) Área Oriente',
-            localidad: 'Cedis Guanipa - CDSGUA',
-            fechaHora: '2026-11-02 19:40',
-            criticidad: 'Crítico',
-            categoria: 'Delincuencia Organizada',
-            subcategoria: 'Robo de Carga',
-            descripcion: 'Activación de botón de pánico en tramo troncal. Se coordinó de inmediato con comisiones policiales en el cuadrante logrando frustrar el robo y resguardar al operador y la carga.',
-            fotos: [],
-            typpData: null,
-            gpData: null
-          },
-          {
-            folio: 'CDSANT04112026',
-            persona: 'Encargado Antímano',
-            localidad: 'Cedis Antímano - CDSANT',
-            fechaHora: '2026-11-04 08:20',
-            criticidad: 'Alto',
-            categoria: 'Seguridad Física y Patrimonial',
-            subcategoria: 'Intrusión sin armas',
-            descripcion: 'Analítica de video detectó sujeto intentando escalar cerca perimetral norte. Oficiales de prevención realizaron abordaje y retiro inmediato.',
-            fotos: [],
-            typpData: null,
-            gpData: null
-          },
-          {
-            folio: 'PTAMCBO07112026',
-            persona: 'Encargado Planta Maracaibo',
-            localidad: 'Planta Maracaibo - PTAMCBO',
-            fechaHora: '2026-11-07 15:50',
-            criticidad: 'Alto',
-            categoria: 'Gestión PROINT',
-            subcategoria: 'Apoyo a entes del estado',
-            descripcion: 'Incautación y recuperación de mercancía desviada en punto de venta no autorizado tras seguimiento GPS y apoyo policial.',
-            fotos: [],
-            typpData: null,
-            gpData: { checks: ['Apoyo CAR', 'Seguimiento GPS', 'Hubo Recuperación', 'Recuperación de Producto Terminado'], activos: '210 cajas producto terminado y 3 paletas', monto: 3480 }
-          },
-          {
-            folio: 'CDSMCY10112026',
-            persona: 'Encargado Cedis Maracay',
-            localidad: 'Cedis Maracay - CDSMCY',
-            fechaHora: '2026-11-10 10:05',
-            criticidad: 'Medio',
-            categoria: 'Conflictividad Social y Política',
-            subcategoria: 'Cierre de vía pública',
-            descripcion: 'Cierre intermitente en adyacencias por protesta comunitaria. Se desvían 4 unidades primarias hacia ruta alterna.',
-            fotos: [],
-            typpData: null,
-            gpData: null
-          },
-          {
-            folio: 'CDSCBOL12112026',
-            persona: 'Encargado Ciudad Bolívar',
-            localidad: 'Cedis Ciudad Bolívar - CDSCBOL',
-            fechaHora: '2026-11-12 13:15',
-            criticidad: 'Medio',
-            categoria: 'Seguridad Física y Patrimonial',
-            subcategoria: 'Falla sistema de Videovigilancia',
-            descripcion: 'Desconexión temporal de grabador NVR secundario en área de carga por fluctuación eléctrica.',
-            fotos: [],
-            typpData: null,
-            gpData: null
-          },
-          {
-            folio: 'OFISER14112026',
-            persona: 'Encargado Oficina Principal',
-            localidad: 'Oficina de Servicios - OFISER',
-            fechaHora: '2026-11-14 16:30',
-            criticidad: 'Alto',
-            categoria: 'Emergencias Industriales o de Safety',
-            subcategoria: 'Inundación por tubería rota',
-            descripcion: 'Rotura de tubería matriz de agua blanca en pasillo técnico. Activado protocolo de mantenimiento y seguridad.',
-            fotos: [],
-            typpData: null,
-            gpData: null
-          },
-          {
-            folio: 'PTAVAL16112026',
-            persona: 'OMT Líder Freites',
-            localidad: 'Planta Valencia - PTAVAL',
-            fechaHora: '2026-11-16 09:10',
-            criticidad: 'Bajo',
-            categoria: 'Ética y Cumplimiento',
-            subcategoria: 'Incumplimiento de protocolos',
-            descripcion: 'Verificación de control de acceso vehicular en puerta 2 sin novedad mayor.',
-            fotos: [],
-            typpData: null,
-            gpData: null
+            gpData: { checks: ["Apoyo CAR"], activos: "Ninguno", monto: 0 }
           }
         ];
-        localStorage.setItem('car_master_eventos_v3', JSON.stringify(eventosSeed));
+        localStorage.setItem('car_master_eventos_v3', JSON.stringify(sampleEventos));
       }
     }
 
-    // --- FORMATEADOR DE FECHA DDMMYYYY ---
-    function formatDateDDMMYYYY(isoDateString) {
-      if (!isoDateString) {
-        const now = new Date();
-        const dd = String(now.getDate()).padStart(2, '0');
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const yyyy = now.getFullYear();
-        return `${dd}${mm}${yyyy}`;
+    function populateDropdowns() {
+      // 1. Operadores Saliente y Entrante (Módulo 1)
+      const selSaliente = document.getElementById('m1-op-saliente');
+      const selEntrante = document.getElementById('m1-op-entrante');
+      if (selSaliente && selEntrante) {
+        selSaliente.innerHTML = '';
+        selEntrante.innerHTML = '';
+        OPERADORES_CAR.forEach((op, idx) => {
+          selSaliente.add(new Option(op, op));
+          selEntrante.add(new Option(op, op, false, idx === 1));
+        });
       }
-      const datePart = isoDateString.split('T')[0].split(' ')[0];
-      const parts = datePart.split('-'); // [YYYY, MM, DD]
-      if (parts.length === 3) {
-        return `${parts[2]}${parts[1]}${parts[0]}`;
+
+      // 2. Persona que reporta (Módulo 2)
+      const selPersona = document.getElementById('m2-persona');
+      if (selPersona) {
+        selPersona.innerHTML = '<option value="">-- Seleccione Persona que Reporta --</option>';
+        PERSONAS_REPORTAN.forEach(p => {
+          selPersona.add(new Option(p, p));
+        });
       }
-      return datePart.replace(/-/g, '');
+
+      // 3. Unidad Operativa con siglas (Módulo 2 y Filtros)
+      const selUnidad = document.getElementById('m2-localidad');
+      const dashUnidad = document.getElementById('dash-filter-unidad');
+      if (selUnidad) {
+        selUnidad.innerHTML = '<option value="">-- Seleccione Unidad Operativa --</option>';
+        UNIDADES_OPERATIVAS.forEach(u => {
+          selUnidad.add(new Option(`${u.nombre} (${u.sigla})`, u.nombre));
+        });
+      }
+      if (dashUnidad) {
+        dashUnidad.innerHTML = '<option value="ALL">Todas las Localidades</option>';
+        UNIDADES_OPERATIVAS.forEach(u => {
+          dashUnidad.add(new Option(u.nombre, u.nombre));
+        });
+      }
+
+      // 4. Categorías Principales (Módulo 2)
+      const selCat = document.getElementById('m2-categoria');
+      if (selCat) {
+        selCat.innerHTML = '<option value="">-- Seleccione Categoría Principal --</option>';
+        Object.keys(MATRIZ_CAR).forEach(cat => {
+          selCat.add(new Option(cat, cat));
+        });
+      }
     }
 
-    // --- GENERADORES DE FOLIO AUTOMÁTICO (EG + DDMMYYYY y SIGLA + DDMMYYYY) ---
+    function setDefaultDates() {
+      const today = new Date().toISOString().slice(0, 10);
+      const nowTime = new Date().toTimeString().slice(0, 5);
+
+      const m1Date = document.getElementById('m1-fecha');
+      if (m1Date) m1Date.value = today;
+
+      const m2FechaHora = document.getElementById('m2-fecha-hora');
+      if (m2FechaHora) m2FechaHora.value = `${today}T${nowTime}`;
+
+      const quickDate = document.getElementById('quick-search-date');
+      const tableDate = document.getElementById('table-search-date');
+      const m1SearchDate = document.getElementById('m1-search-date');
+    }
+
+    function renderSpecialFormSections() {
+      // TYPP Matrix
+      const typpBody = document.getElementById('typp-matrix-body');
+      if (typpBody) {
+        typpBody.innerHTML = '';
+        TYPP_EQUIPOS.forEach((eq, idx) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="p-2.5 font-mono font-bold text-slate-300">${eq}</td>
+            <td class="p-2.5 text-center"><input type="radio" name="typp_eq_${idx}" value="DAHUA" class="accent-femsa-red"></td>
+            <td class="p-2.5 text-center"><input type="radio" name="typp_eq_${idx}" value="HIKVISION" class="accent-femsa-red"></td>
+            <td class="p-2.5 text-center"><input type="radio" name="typp_eq_${idx}" value="OTRAS" class="accent-femsa-red" checked></td>
+          `;
+          typpBody.appendChild(tr);
+        });
+      }
+
+      // GP Checkboxes
+      const gpGrid = document.getElementById('gp-checkboxes-grid');
+      if (gpGrid) {
+        gpGrid.innerHTML = '';
+        GP_OPCIONES.forEach((opt, idx) => {
+          const label = document.createElement('label');
+          label.className = "flex items-center space-x-2 text-xs text-slate-300 cursor-pointer bg-zinc-950 p-2.5 rounded-xl border border-slate-800 hover:border-amber-500/50 transition";
+          label.innerHTML = `
+            <input type="checkbox" name="gp_check" value="${opt}" class="w-4 h-4 rounded accent-amber-500 bg-zinc-900 border-slate-700">
+            <span>${opt}</span>
+          `;
+          gpGrid.appendChild(label);
+        });
+      }
+    }
+
+    // --- GENERACIÓN DE FOLIOS DINÁMICOS ---
+    function updateNextFolioPreviews() {
+      // 1. Folio Guardia: EG + DDMMYYYY
+      const m1FechaVal = document.getElementById('m1-fecha')?.value;
+      let dateStrM1 = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      if (m1FechaVal) {
+        const parts = m1FechaVal.split('-');
+        if (parts.length === 3) dateStrM1 = `${parts[2]}${parts[1]}${parts[0]}`;
+      }
+      const nextGuardiaFolio = `EG${dateStrM1}`;
+      const m1PreviewEl = document.getElementById('m1-next-folio');
+      if (m1PreviewEl) m1PreviewEl.textContent = `Próximo Folio: ${nextGuardiaFolio}`;
+
+      // 2. Folio Evento: [SIGLA_UNIDAD] + DDMMYYYY
+      const localidadVal = document.getElementById('m2-localidad')?.value;
+      let siglaUnidad = "PTAVAL";
+      if (localidadVal) {
+        const found = UNIDADES_OPERATIVAS.find(u => u.nombre === localidadVal);
+        if (found) siglaUnidad = found.sigla;
+      }
+
+      const m2DatetimeVal = document.getElementById('m2-fecha-hora')?.value;
+      let dateStrM2 = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      if (m2DatetimeVal) {
+        const datePart = m2DatetimeVal.split('T')[0];
+        const parts = datePart.split('-');
+        if (parts.length === 3) dateStrM2 = `${parts[2]}${parts[1]}${parts[0]}`;
+      }
+
+      const nextEventoFolio = `${siglaUnidad}${dateStrM2}`;
+      const m2PreviewEl = document.getElementById('m2-folio-preview');
+      if (m2PreviewEl) m2PreviewEl.textContent = nextEventoFolio;
+    }
+
     function getNextGuardiaFolio() {
-      const fechaVal = document.getElementById('m1-fecha')?.value;
-      const ddmmyyyy = formatDateDDMMYYYY(fechaVal);
-      return `EG${ddmmyyyy}`;
+      const m1FechaVal = document.getElementById('m1-fecha')?.value || new Date().toISOString().slice(0, 10);
+      const parts = m1FechaVal.split('-');
+      const dateStr = parts.length === 3 ? `${parts[2]}${parts[1]}${parts[0]}` : '17112026';
+      return `EG${dateStr}`;
     }
 
     function getNextEventoFolio() {
-      const unidadVal = document.getElementById('m2-localidad')?.value || '';
-      const fechaHoraVal = document.getElementById('m2-fecha-hora')?.value || '';
-      const ddmmyyyy = formatDateDDMMYYYY(fechaHoraVal);
+      const localidadVal = document.getElementById('m2-localidad')?.value || "Planta Valencia";
+      const found = UNIDADES_OPERATIVAS.find(u => u.nombre === localidadVal);
+      const sigla = found ? found.sigla : "PTAVAL";
 
-      let sigla = 'UNID';
-      if (unidadVal.includes(' - ')) {
-        sigla = unidadVal.split(' - ').pop().trim();
-      } else if (UNIDADES_OPERATIVAS.length > 0) {
-        sigla = 'PTAVAL';
+      const dtVal = document.getElementById('m2-fecha-hora')?.value || new Date().toISOString();
+      const datePart = dtVal.split('T')[0];
+      const parts = datePart.split('-');
+      const dateStr = parts.length === 3 ? `${parts[2]}${parts[1]}${parts[0]}` : '17112026';
+
+      return `${sigla}${dateStr}`;
+    }
+
+    function renderPhotoPreviews() {
+      const grid = document.getElementById('m2-preview-grid');
+      const countEl = document.getElementById('m2-photo-count');
+      if (!grid || !countEl) return;
+
+      countEl.textContent = `${pendingPhotos.length} foto(s) adjunta(s)`;
+      if (pendingPhotos.length === 0) {
+        grid.classList.add('hidden');
+        grid.innerHTML = '';
+        return;
       }
-      return `${sigla}${ddmmyyyy}`;
+
+      grid.classList.remove('hidden');
+      grid.innerHTML = '';
+      pendingPhotos.forEach((photo, idx) => {
+        const card = document.createElement('div');
+        card.className = "relative rounded-xl overflow-hidden border border-slate-700 bg-zinc-950 group h-24";
+        card.innerHTML = `
+          <img src="${photo.dataUrl}" alt="${photo.name}" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+            <button type="button" onclick="removePendingPhoto(${idx})" class="w-8 h-8 rounded-full bg-femsa-red text-white flex items-center justify-center shadow hover:scale-110 transition">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+          </div>
+          <span class="absolute bottom-0 inset-x-0 bg-black/70 text-[9px] text-slate-300 px-1.5 py-0.5 truncate">${photo.name}</span>
+        `;
+        grid.appendChild(card);
+      });
     }
 
-    function updateNextFolioPreviews() {
-      const elGrd = document.getElementById('m1-next-folio');
-      if (elGrd) elGrd.textContent = `Próximo Folio: ${getNextGuardiaFolio()}`;
-
-      const elEv = document.getElementById('m2-folio-preview');
-      if (elEv) elEv.textContent = getNextEventoFolio();
-    }
-
-    // --- AUTENTICACIÓN Y NAVEGACIÓN ---
-    function fillQuickPass() {
-      document.getElementById('input-pass').value = 'CAR2026';
+    // --- AUTENTICACIÓN Y NAVEGACIÓN POR ROL ---
+    function handleBrandClick() {
+      const role = localStorage.getItem('car_master_role') || 'CAR';
+      if (role === 'PI') return;
+      navigateTo('hub');
     }
 
     function handleLogin(e) {
       e.preventDefault();
-      const val = document.getElementById('input-pass').value.trim();
+      const val = document.getElementById('input-pass').value.trim().toUpperCase();
       if (val === 'CAR2026') {
         localStorage.setItem('car_master_auth', 'true');
+        localStorage.setItem('car_master_role', 'CAR');
         document.getElementById('screen-login').classList.add('hidden');
         document.getElementById('app-header').classList.remove('hidden');
         document.getElementById('login-error').classList.add('hidden');
+        applyRoleUI('CAR');
         navigateTo('hub');
-        showToast('Bienvenido a CAR MASTER • Consola Activa');
+        showToast('Bienvenido a CAR MASTER • Acceso Total Activo');
+      } else if (val === 'PI2026') {
+        localStorage.setItem('car_master_auth', 'true');
+        localStorage.setItem('car_master_role', 'PI');
+        document.getElementById('screen-login').classList.add('hidden');
+        document.getElementById('app-header').classList.remove('hidden');
+        document.getElementById('login-error').classList.add('hidden');
+        applyRoleUI('PI');
+        navigateTo('mod2');
+        showToast('Acceso Protección Integral • Módulo de Eventos 24/7');
       } else {
         document.getElementById('login-error').classList.remove('hidden');
       }
@@ -1646,6 +1586,7 @@
 
     function logout() {
       localStorage.removeItem('car_master_auth');
+      localStorage.removeItem('car_master_role');
       document.getElementById('app-header').classList.add('hidden');
       document.getElementById('screen-hub').classList.add('hidden');
       document.getElementById('screen-mod1').classList.add('hidden');
@@ -1655,6 +1596,12 @@
     }
 
     function navigateTo(screen) {
+      const role = localStorage.getItem('car_master_role') || 'CAR';
+
+      if (role === 'PI' && screen !== 'mod2') {
+        screen = 'mod2';
+      }
+
       document.getElementById('screen-hub').classList.add('hidden');
       document.getElementById('screen-mod1').classList.add('hidden');
       document.getElementById('screen-mod2').classList.add('hidden');
@@ -1672,7 +1619,11 @@
         switchTabMod1('form');
       } else if (screen === 'mod2') {
         document.getElementById('screen-mod2').classList.remove('hidden');
-        btnHub.classList.remove('hidden');
+        if (role === 'PI') {
+          btnHub.classList.add('hidden');
+        } else {
+          btnHub.classList.remove('hidden');
+        }
         updateNextFolioPreviews();
         switchTabMod2('form');
       }
