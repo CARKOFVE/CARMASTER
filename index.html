@@ -956,31 +956,38 @@
             idDatosJSON: "r4600deffc47b49e684a66e8388c790fb"
         };
 
-        async function enviarRegistroSharePoint(modulo, datosObjeto) {
-            try {
-                const bodyForms = {
-                    startDate: new Date().toISOString(),
-                    submitDate: new Date().toISOString(),
-                    answers: JSON.stringify([
-                        { questionId: FORMS_CONFIG.idModulo, answer1: String(modulo || "") },
-                        { questionId: FORMS_CONFIG.idDatosJSON, answer1: JSON.stringify(datosObjeto || {}) }
-                    ])
-                };
+async function enviarRegistroSharePoint(modulo, datosObjeto) {
+    try {
+      // Estructura optimizada compatible con la API de Forms
+      const payloadFormulario = {
+        answers: JSON.stringify([
+          {
+            questionId: FORMS_CONFIG.idModulo,
+            answer1: String(modulo || "")
+          },
+          {
+            questionId: FORMS_CONFIG.idDatosJSON,
+            answer1: JSON.stringify(datosObjeto || {})
+          }
+        ])
+      };
 
-                await fetch(FORMS_CONFIG.endpointUrl, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(bodyForms)
-                });
-                
-                console.log("Registro enviado correctamente a la nube.");
-                return true;
-            } catch (error) {
-                console.error("Error al enviar:", error);
-                return false;
-            }
-        }
+      await fetch(FORMS_CONFIG.endpointUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payloadFormulario)
+      });
+      
+      console.log("Registro enviado correctamente a la nube.");
+      return true;
+    } catch (error) {
+      console.error("Error al enviar a SharePoint:", error);
+      return false;
+    }
+  }
 
         function seedInitialData() {
             if (!localStorage.getItem('car_master_guardias_v2')) {
