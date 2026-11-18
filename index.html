@@ -947,6 +947,41 @@
 
         const M1_SYSTEMS_LIST = ["VideoWall CAR", "Plataforma DSS Pro", "Control Acceso DsX", "Tracker GPS", "Telefonía / Radios", "Climatización / UPS"];
 
+        // ==========================================
+        // CONFIGURACIÓN Y PUENTE CAR MASTER -> MS FORMS
+        // ==========================================
+        const FORMS_CONFIG = {
+            endpointUrl: "https://forms.guest.usercontent.microsoft/formapi/api/7094d542-3815-4c82-b1d5-6917d0443cf4/users/f9dffa67-0040-448f-af63-8fa8393cbb86/forms('QtWUcBU4gkyx1WkX0EQ89Gf63_lAAI9Er2OPqDk8u4ZUQldJVU1CMlFQSUhIMzhRWUdJVjk4N1pCUC4u')/responses",
+            idModulo: "rb8cf08b91d654d35b5b9ed3d50308683",
+            idDatosJSON: "r4600deffc47b49e684a66e8388c790fb"
+        };
+
+        async function enviarRegistroSharePoint(modulo, datosObjeto) {
+            try {
+                const bodyForms = {
+                    startDate: new Date().toISOString(),
+                    submitDate: new Date().toISOString(),
+                    answers: JSON.stringify([
+                        { questionId: FORMS_CONFIG.idModulo, answer1: String(modulo || "") },
+                        { questionId: FORMS_CONFIG.idDatosJSON, answer1: JSON.stringify(datosObjeto || {}) }
+                    ])
+                };
+
+                await fetch(FORMS_CONFIG.endpointUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(bodyForms)
+                });
+                
+                console.log("Registro enviado correctamente a la nube.");
+                return true;
+            } catch (error) {
+                console.error("Error al enviar:", error);
+                return false;
+            }
+        }
+
         function seedInitialData() {
             if (!localStorage.getItem('car_master_guardias_v2')) {
                 localStorage.setItem('car_master_guardias_v2', JSON.stringify([
@@ -1161,7 +1196,6 @@
                     </div>
                 `;
             } else {
-                // Panel Especial Unificado para las otras 10 categorías de la Matriz CAR
                 panelContent.innerHTML = `
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
@@ -1321,7 +1355,7 @@
             if (tab === 'dash') renderGuardTable();
         }
 
-        function saveGuardRecord() {
+        async function saveGuardRecord() {
             const folio = document.getElementById('m1-next-folio').textContent;
             const fecha = document.getElementById('m1-fecha').value;
             const turno = document.getElementById('m1-turno').value;
@@ -1349,6 +1383,9 @@
             const list = JSON.parse(localStorage.getItem('car_master_guardias_v2') || '[]');
             list.unshift(record);
             localStorage.setItem('car_master_guardias_v2', JSON.stringify(list));
+
+            // Envío automático al SharePoint vía MS Forms
+            await enviarRegistroSharePoint("guardia", record);
 
             document.getElementById('m1-obs').value = '';
             for (let i = 0; i < M1_SYSTEMS_LIST.length; i++) {
@@ -1548,7 +1585,7 @@
             renderPhotosPreview();
         }
 
-        function saveEventRecord(e) {
+        async function saveEventRecord(e) {
             e.preventDefault();
             const folio = document.getElementById('m2-next-folio').textContent;
             const record = {
@@ -1568,6 +1605,9 @@
             const list = JSON.parse(localStorage.getItem('car_master_eventos_v2') || '[]');
             list.unshift(record);
             localStorage.setItem('car_master_eventos_v2', JSON.stringify(list));
+
+            // Envío automático al SharePoint vía MS Forms
+            await enviarRegistroSharePoint("evento", record);
 
             document.getElementById('m2-descripcion').value = '';
             uploadedPhotosBase64 = [];
@@ -1733,7 +1773,7 @@
             if (tab === 'table') renderAlarmTable();
         }
 
-        function saveAlarmaRecord(e) {
+        async function saveAlarmaRecord(e) {
             e.preventDefault();
             const alarma = {
                 region: document.getElementById('m3-region').value,
@@ -1753,6 +1793,9 @@
             const list = JSON.parse(localStorage.getItem('car_master_alarmas_v2') || '[]');
             list.unshift(alarma);
             localStorage.setItem('car_master_alarmas_v2', JSON.stringify(list));
+
+            // Envío automático al SharePoint vía MS Forms
+            await enviarRegistroSharePoint("alarma", alarma);
 
             document.getElementById('m3-activado-por').value = '';
             document.getElementById('m3-zona').value = '';
@@ -1831,39 +1874,6 @@
                 document.getElementById('screen-login').classList.remove('hidden');
             }
         };
-    // ==========================================
-  // PUENTE CAR MASTER -> MS FORMS -> SHAREPOINT
-  // ==========================================
-  const FORMS_CONFIG = {
-    endpointUrl: "https://forms.guest.usercontent.microsoft/formapi/api/7094d542-3815-4c82-b1d5-6917d0443cf4/users/f9dffa67-0040-448f-af63-8fa8393cbb86/forms('QtWUcBU4gkyx1WkX0EQ89Gf63_lAAI9Er2OPqDk8u4ZUQldJVU1CMlFQSUhIMzhRWUdJVjk4N1pCUC4u')/responses",
-    idModulo: "rb8cf08b91d654d35b5b9ed3d50308683",
-    idDatosJSON: "r4600deffc47b49e684a66e8388c790fb"
-  };
-
-  async function enviarRegistroSharePoint(modulo, datosObjeto) {
-    try {
-      const bodyForms = {
-        startDate: new Date().toISOString(),
-        submitDate: new Date().toISOString(),
-        answers: JSON.stringify([
-          { questionId: FORMS_CONFIG.idModulo, answer1: String(modulo || "") },
-          { questionId: FORMS_CONFIG.idDatosJSON, answer1: JSON.stringify(datosObjeto || {}) }
-        ])
-      };
-
-      await fetch(FORMS_CONFIG.endpointUrl, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bodyForms)
-      });
-      
-      console.log("Registro enviado correctamente a la nube.");
-      return true;
-    } catch (error) {
-      console.error("Error al enviar:", error);
-      return false;
-    }
-  }
+    </script>
 </body>
 </html>
