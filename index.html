@@ -1831,6 +1831,76 @@
                 document.getElementById('screen-login').classList.remove('hidden');
             }
         };
+        <script>
+  // ==========================================
+  // CONFIGURACIÓN DE CONEXIÓN CAR MASTER -> MS FORMS
+  // ==========================================
+  const FORMS_CONFIG = {
+    endpointUrl: "https://forms.guest.usercontent.microsoft/formapi/api/7094d542-3815-4c82-b1d5-6917d0443cf4/users/f9dffa67-0040-448f-af63-8fa8393cbb86/forms('QtWUcBU4gkyx1WkX0EQ89Gf63_lAAI9Er2OPqDk8u4ZUQldJVU1CMlFQSUhIMzhRWUdJVjk4N1pCUC4u')/responses",
+    idModulo: "rb8cf08b91d654d35b5b9ed3d50308683",
+    idDatosJSON: "r4600deffc47b49e684a66e8388c790fb"
+  };
+
+  /**
+   * Función universal para enviar registros a Power Automate / SharePoint
+   * @param {string} modulo - Puede ser 'guardia', 'evento' o 'alarma'
+   * @param {object} datosObjeto - Objeto con los datos del formulario correspondiente
+   */
+  async function enviarRegistroSharePoint(modulo, datosObjeto) {
+    const payloadLimpio = {
+      folio: String(datosObjeto.folio || ""),
+      fecha: String(datosObjeto.fecha || ""),
+      hora: String(datosObjeto.hora || ""),
+      turno: String(datosObjeto.turno || ""),
+      saliente: String(datosObjeto.saliente || ""),
+      entrante: String(datosObjeto.entrante || ""),
+      estadoGeneral: String(datosObjeto.estadoGeneral || ""),
+      novedadesDetalle: String(datosObjeto.novedadesDetalle || ""),
+      sistemasNovedades: String(datosObjeto.sistemasNovedades || ""),
+      reporta: String(datosObjeto.reporta || ""),
+      unidad: String(datosObjeto.unidad || ""),
+      criticidad: String(datosObjeto.criticidad || ""),
+      categoria: String(datosObjeto.categoria || ""),
+      subcategoria: String(datosObjeto.subcategoria || ""),
+      descripcion: String(datosObjeto.descripcion || ""),
+      detalleExtra: String(datosObjeto.detalleExtra || ""),
+      evidenciaNombre: String(datosObjeto.evidenciaNombre || ""),
+      region: String(datosObjeto.region || ""),
+      unidadOperativa: String(datosObjeto.unidadOperativa || ""),
+      unidadNoOperativa: String(datosObjeto.unidadNoOperativa || ""),
+      horaAct: String(datosObjeto.horaAct || ""),
+      horaAtender: String(datosObjeto.horaAtender || ""),
+      operadorCAR: String(datosObjeto.operadorCAR || ""),
+      activadoPor: String(datosObjeto.activadoPor || ""),
+      tipoAlarma: String(datosObjeto.tipoAlarma || ""),
+      estatus: String(datosObjeto.estatus || ""),
+      zona: String(datosObjeto.zona || ""),
+      observaciones: String(datosObjeto.observaciones || "")
+    };
+
+    const bodyForms = {
+      startDate: new Date().toISOString(),
+      submitDate: new Date().toISOString(),
+      answers: JSON.stringify([
+        { questionId: FORMS_CONFIG.idModulo, answer1: modulo },
+        { questionId: FORMS_CONFIG.idDatosJSON, answer1: JSON.stringify(payloadLimpio) }
+      ])
+    };
+
+    try {
+      await fetch(FORMS_CONFIG.endpointUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyForms)
+      });
+      return { ok: true, mensaje: "Enviado con éxito a la nube" };
+    } catch (error) {
+      console.error("Error de red:", error);
+      return { ok: false, mensaje: "Error de conexión" };
+    }
+  }
+</script>
     </script>
 </body>
 </html>
