@@ -948,7 +948,7 @@
         const M1_SYSTEMS_LIST = ["VideoWall CAR", "Plataforma DSS Pro", "Control Acceso DsX", "Tracker GPS", "Telefonía / Radios", "Climatización / UPS"];
 
         // ==========================================
-        // CONFIGURACIÓN Y PUENTE CAR MASTER -> MS FORMS
+        // CONFIGURACIÓN Y PUENTE CAR MASTER -> MS FORMS (CORREGIDO)
         // ==========================================
         const FORMS_CONFIG = {
             endpointUrl: "https://forms.guest.usercontent.microsoft/formapi/api/7094d542-3815-4c82-b1d5-6917d0443cf4/users/f9dffa67-0040-448f-af63-8fa8393cbb86/forms('QtWUcBU4gkyx1WkX0EQ89Gf63_lAAI9Er2OPqDk8u4ZUQldJVU1CMlFQSUhIMzhRWUdJVjk4N1pCUC4u')/responses",
@@ -956,38 +956,39 @@
             idDatosJSON: "r4600deffc47b49e684a66e8388c790fb"
         };
 
-async function enviarRegistroSharePoint(modulo, datosObjeto) {
-    try {
-      // Estructura optimizada compatible con la API de Forms
-      const payloadFormulario = {
-        answers: JSON.stringify([
-          {
-            questionId: FORMS_CONFIG.idModulo,
-            answer1: String(modulo || "")
-          },
-          {
-            questionId: FORMS_CONFIG.idDatosJSON,
-            answer1: JSON.stringify(datosObjeto || {})
-          }
-        ])
-      };
+        async function enviarRegistroSharePoint(modulo, datosObjeto) {
+            try {
+                const payloadFormulario = {
+                    startDate: new Date().toISOString(),
+                    submitDate: new Date().toISOString(),
+                    answers: JSON.stringify([
+                        {
+                            questionId: FORMS_CONFIG.idModulo,
+                            answer1: String(modulo || "")
+                        },
+                        {
+                            questionId: FORMS_CONFIG.idDatosJSON,
+                            answer1: JSON.stringify(datosObjeto || {})
+                        }
+                    ])
+                };
 
-      await fetch(FORMS_CONFIG.endpointUrl, {
-        method: "POST",
-        mode: "no-cors",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payloadFormulario)
-      });
-      
-      console.log("Registro enviado correctamente a la nube.");
-      return true;
-    } catch (error) {
-      console.error("Error al enviar a SharePoint:", error);
-      return false;
-    }
-  }
+                await fetch(FORMS_CONFIG.endpointUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payloadFormulario)
+                });
+                
+                console.log("Petición de envío completada hacia Forms.");
+                return true;
+            } catch (error) {
+                console.error("Error al enviar a SharePoint:", error);
+                return false;
+            }
+        }
 
         function seedInitialData() {
             if (!localStorage.getItem('car_master_guardias_v2')) {
